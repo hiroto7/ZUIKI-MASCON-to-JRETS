@@ -79,9 +79,99 @@ def key_up(button: ZuikiMasconButton | DpadButton) -> None:
             pyautogui.keyUp(key)
 
 
-pressed_buttons = set[Literal[ZuikiMasconButton.ZL] | DpadButton]()
-emergency_brake = False
+def handle_axis_motion(value: float) -> None:
+    global emergency_brake, notch
+
+    if value > 0.95:
+        next_notch = 5
+    elif value > 0.75:
+        next_notch = 4
+    elif value > 0.55:
+        next_notch = 3
+    elif value > 0.3:
+        next_notch = 2
+    elif value > 0.1:
+        next_notch = 1
+    elif value > -0.05:
+        next_notch = 0
+    elif value > -0.25:
+        next_notch = -1
+    elif value > -0.35:
+        next_notch = -2
+    elif value > -0.45:
+        next_notch = -3
+    elif value > -0.55:
+        next_notch = -4
+    elif value > -0.7:
+        next_notch = -5
+    elif value > -0.8:
+        next_notch = -6
+    elif value > -0.9:
+        next_notch = -7
+    else:
+        next_notch = -8
+
+    if ZuikiMasconButton.ZL in pressed_buttons and next_notch == -8:
+        pyautogui.press("1")
+        emergency_brake = True
+    elif next_notch == 0:
+        pyautogui.press("s")
+        emergency_brake = False
+    else:
+        if emergency_brake and next_notch > -8:
+            pyautogui.press("a")
+        emergency_brake = False
+
+        if next_notch < notch:
+            pyautogui.press("q", notch - next_notch)
+        elif notch < next_notch:
+            pyautogui.press("z", next_notch - notch)
+
+    notch = next_notch
+
+
+def handle_button_down(button: ZuikiMasconButton) -> None:
+    global emergency_brake
+
+    if button == ZuikiMasconButton.ZL:
+        pressed_buttons.add(ZuikiMasconButton.ZL)
+        if notch == -8:
+            pyautogui.press("1")
+            emergency_brake = True
+    else:
+        key_down(button)
+
+
+def handle_button_up(button: ZuikiMasconButton) -> None:
+    global emergency_brake
+
+    if button == ZuikiMasconButton.ZL:
+        pressed_buttons.remove(ZuikiMasconButton.ZL)
+        if emergency_brake:
+            pyautogui.press("a")
+        emergency_brake = False
+    else:
+        key_up(button)
+
+
+def handle_hat_motion(x: int, y: int) -> None:
+    for is_pressed, direction in (
+        (y == 1, DpadButton.UP),
+        (y == -1, DpadButton.DOWN),
+        (x == -1, DpadButton.LEFT),
+        (x == 1, DpadButton.RIGHT),
+    ):
+        if is_pressed and direction not in pressed_buttons:
+            key_down(direction)
+            pressed_buttons.add(direction)
+        if not is_pressed and direction in pressed_buttons:
+            key_up(direction)
+            pressed_buttons.remove(direction)
+
+
 notch = 0
+emergency_brake = False
+pressed_buttons = set[Literal[ZuikiMasconButton.ZL] | DpadButton]()
 
 pygame.init()
 joystick = pygame.joystick.Joystick(0)
@@ -90,92 +180,12 @@ while True:
     for event in pygame.event.get():
         match event.type:
             case pygame.JOYAXISMOTION:
-                value = event.dict["value"]
-
-                if value > 0.95:
-                    next_notch = 5
-                elif value > 0.75:
-                    next_notch = 4
-                elif value > 0.55:
-                    next_notch = 3
-                elif value > 0.3:
-                    next_notch = 2
-                elif value > 0.1:
-                    next_notch = 1
-                elif value > -0.05:
-                    next_notch = 0
-                elif value > -0.25:
-                    next_notch = -1
-                elif value > -0.35:
-                    next_notch = -2
-                elif value > -0.45:
-                    next_notch = -3
-                elif value > -0.55:
-                    next_notch = -4
-                elif value > -0.7:
-                    next_notch = -5
-                elif value > -0.8:
-                    next_notch = -6
-                elif value > -0.9:
-                    next_notch = -7
-                else:
-                    next_notch = -8
-
-                if ZuikiMasconButton.ZL in pressed_buttons and next_notch == -8:
-                    pyautogui.press("1")
-                    emergency_brake = True
-                elif next_notch == 0:
-                    pyautogui.press("s")
-                    emergency_brake = False
-                else:
-                    if emergency_brake and next_notch > -8:
-                        pyautogui.press("a")
-                    emergency_brake = False
-
-                    if next_notch < notch:
-                        pyautogui.press("q", notch - next_notch)
-                    elif notch < next_notch:
-                        pyautogui.press("z", next_notch - notch)
-
-                notch = next_notch
-
+                handle_axis_motion(event.dict["value"])
             case pygame.JOYBUTTONDOWN:
-                button = event.dict["button"]
-
-                if button == ZuikiMasconButton.ZL:
-                    pressed_buttons.add(ZuikiMasconButton.ZL)
-                    if notch == -8:
-                        pyautogui.press("1")
-                        emergency_brake = True
-                else:
-                    key_down(button)
-
+                handle_button_down(event.dict["button"])
             case pygame.JOYBUTTONUP:
-                button = event.dict["button"]
-
-                if button == ZuikiMasconButton.ZL:
-                    pressed_buttons.remove(ZuikiMasconButton.ZL)
-                    if emergency_brake:
-                        pyautogui.press("a")
-                    emergency_brake = False
-                else:
-                    key_up(button)
-
+                handle_button_up(event.dict["button"])
             case pygame.JOYHATMOTION:
-                x, y = event.dict["value"]
-
-                for is_pressed, direction in (
-                    (y == 1, DpadButton.UP),
-                    (y == -1, DpadButton.DOWN),
-                    (x == -1, DpadButton.LEFT),
-                    (x == 1, DpadButton.RIGHT),
-                ):
-                    if is_pressed and direction not in pressed_buttons:
-                        key_down(direction)
-                        pressed_buttons.add(direction)
-                    if not is_pressed and direction in pressed_buttons:
-                        key_up(direction)
-                        pressed_buttons.remove(direction)
-
+                handle_hat_motion(*event.dict["value"])
             case _:
                 pass
