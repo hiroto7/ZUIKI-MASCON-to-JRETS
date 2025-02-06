@@ -80,7 +80,7 @@ def key_up(button: ZuikiMasconButton | DpadButton) -> None:
 
 
 def handle_axis_motion(value: float) -> None:
-    global emergency_brake, notch
+    global notch
 
     if value > 0.95:
         next_notch = 5
@@ -113,43 +113,38 @@ def handle_axis_motion(value: float) -> None:
 
     if ZuikiMasconButton.ZL in pressed_buttons and next_notch == -8:
         pyautogui.press("1")
-        emergency_brake = True
-    elif next_notch == 0:
-        pyautogui.press("s")
-        emergency_brake = False
+        notch = -9
     else:
-        if emergency_brake and next_notch > -8:
-            pyautogui.press("a")
-        emergency_brake = False
-
-        if next_notch < notch:
+        if next_notch == 0:
+            pyautogui.press("s")
+        elif next_notch < notch:
             pyautogui.press("q", notch - next_notch)
         elif notch < next_notch:
             pyautogui.press("z", next_notch - notch)
 
-    notch = next_notch
+        notch = next_notch
 
 
 def handle_button_down(button: ZuikiMasconButton) -> None:
-    global emergency_brake
+    global notch
 
     if button == ZuikiMasconButton.ZL:
         pressed_buttons.add(ZuikiMasconButton.ZL)
         if notch == -8:
             pyautogui.press("1")
-            emergency_brake = True
+            notch = -9
     else:
         key_down(button)
 
 
 def handle_button_up(button: ZuikiMasconButton) -> None:
-    global emergency_brake
+    global notch
 
     if button == ZuikiMasconButton.ZL:
         pressed_buttons.remove(ZuikiMasconButton.ZL)
-        if emergency_brake:
-            pyautogui.press("a")
-        emergency_brake = False
+        if notch == -9:
+            pyautogui.press("z")
+            notch = -8
     else:
         key_up(button)
 
@@ -169,8 +164,7 @@ def handle_hat_motion(x: int, y: int) -> None:
             pressed_buttons.remove(direction)
 
 
-notch = 0
-emergency_brake = False
+notch: Literal[-9, -8, -7, -6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5] = 0
 pressed_buttons = set[Literal[ZuikiMasconButton.ZL] | DpadButton]()
 
 pygame.init()
