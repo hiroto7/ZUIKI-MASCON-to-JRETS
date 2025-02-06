@@ -82,25 +82,25 @@ def key_up(button: ZuikiMasconButton | DpadButton) -> None:
 def handle_axis_motion(value: float) -> None:
     global notch
 
-    if value > 0.95:
+    if value > 0.9:
         next_notch = 5
-    elif value > 0.75:
+    elif value > 0.7:
         next_notch = 4
     elif value > 0.55:
         next_notch = 3
-    elif value > 0.3:
+    elif value > 0.35:
         next_notch = 2
-    elif value > 0.1:
+    elif value > 0.15:
         next_notch = 1
-    elif value > -0.05:
+    elif value > -0.1:
         next_notch = 0
     elif value > -0.25:
         next_notch = -1
     elif value > -0.35:
         next_notch = -2
-    elif value > -0.45:
+    elif value > -0.5:
         next_notch = -3
-    elif value > -0.55:
+    elif value > -0.6:
         next_notch = -4
     elif value > -0.7:
         next_notch = -5
