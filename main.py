@@ -27,6 +27,24 @@ class DpadButton(Enum):
     RIGHT = "RIGHT"
 
 
+class Notch(IntEnum):
+    P5 = 5
+    P4 = 4
+    P3 = 3
+    P2 = 2
+    P1 = 1
+    N = 0
+    B1 = -1
+    B2 = -2
+    B3 = -3
+    B4 = -4
+    B5 = -5
+    B6 = -6
+    B7 = -7
+    B8 = -8
+    EB = -9
+
+
 MAPPING_TO_KEYBOARD: dict[ZuikiMasconButton | DpadButton, str | tuple[str, str]] = {
     # 警笛（2段目）
     ZuikiMasconButton.A: "backspace",
@@ -83,46 +101,46 @@ def handle_axis_motion(value: float) -> None:
     global notch
 
     if value > 0.9:
-        next_notch = 5
+        next_notch = Notch.P5
     elif value > 0.7:
-        next_notch = 4
+        next_notch = Notch.P4
     elif value > 0.55:
-        next_notch = 3
+        next_notch = Notch.P3
     elif value > 0.35:
-        next_notch = 2
+        next_notch = Notch.P2
     elif value > 0.15:
-        next_notch = 1
+        next_notch = Notch.P1
     elif value > -0.1:
-        next_notch = 0
+        next_notch = Notch.N
     elif value > -0.25:
-        next_notch = -1
+        next_notch = Notch.B1
     elif value > -0.35:
-        next_notch = -2
+        next_notch = Notch.B2
     elif value > -0.5:
-        next_notch = -3
+        next_notch = Notch.B3
     elif value > -0.6:
-        next_notch = -4
+        next_notch = Notch.B4
     elif value > -0.7:
-        next_notch = -5
+        next_notch = Notch.B5
     elif value > -0.8:
-        next_notch = -6
+        next_notch = Notch.B6
     elif value > -0.9:
-        next_notch = -7
+        next_notch = Notch.B7
+    elif ZuikiMasconButton.ZL in pressed_buttons:
+        next_notch = Notch.EB
     else:
-        next_notch = -8
+        next_notch = Notch.B8
 
-    if ZuikiMasconButton.ZL in pressed_buttons and next_notch == -8:
+    if next_notch == Notch.EB:
         pyautogui.press("1")
-        notch = -9
-    else:
-        if next_notch == 0:
-            pyautogui.press("s")
-        elif next_notch < notch:
-            pyautogui.press("q", notch - next_notch)
-        elif notch < next_notch:
-            pyautogui.press("z", next_notch - notch)
+    elif next_notch == Notch.N:
+        pyautogui.press("s")
+    elif next_notch < notch:
+        pyautogui.press("q", notch - next_notch)
+    elif notch < next_notch:
+        pyautogui.press("z", next_notch - notch)
 
-        notch = next_notch
+    notch = next_notch
 
 
 def handle_button_down(button: ZuikiMasconButton) -> None:
@@ -130,9 +148,9 @@ def handle_button_down(button: ZuikiMasconButton) -> None:
 
     if button == ZuikiMasconButton.ZL:
         pressed_buttons.add(ZuikiMasconButton.ZL)
-        if notch == -8:
+        if notch == Notch.B8:
             pyautogui.press("1")
-            notch = -9
+            notch = Notch.EB
     else:
         key_down(button)
 
@@ -142,9 +160,9 @@ def handle_button_up(button: ZuikiMasconButton) -> None:
 
     if button == ZuikiMasconButton.ZL:
         pressed_buttons.remove(ZuikiMasconButton.ZL)
-        if notch == -9:
+        if notch == Notch.EB:
             pyautogui.press("z")
-            notch = -8
+            notch = Notch.B8
     else:
         key_up(button)
 
@@ -164,7 +182,7 @@ def handle_hat_motion(x: int, y: int) -> None:
             pressed_buttons.remove(direction)
 
 
-notch: Literal[-9, -8, -7, -6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5] = 0
+notch: Notch = Notch.N
 pressed_buttons = set[Literal[ZuikiMasconButton.ZL] | DpadButton]()
 
 pygame.init()
