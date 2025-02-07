@@ -1,8 +1,9 @@
-from enum import Enum, IntEnum
+from enum import Enum, IntEnum, auto
 from typing import Literal
 
 import pyautogui
 import pygame
+from pyautogui import press
 
 
 class ZuikiMasconButton(IntEnum):
@@ -21,10 +22,10 @@ class ZuikiMasconButton(IntEnum):
 
 
 class DpadButton(Enum):
-    UP = "UP"
-    DOWN = "DOWN"
-    LEFT = "LEFT"
-    RIGHT = "RIGHT"
+    UP = auto()
+    DOWN = auto()
+    LEFT = auto()
+    RIGHT = auto()
 
 
 class Notch(IntEnum):
@@ -97,50 +98,71 @@ def key_up(button: ZuikiMasconButton | DpadButton) -> None:
             pyautogui.keyUp(key)
 
 
+def get_notch(value: float) -> Notch:
+    if value > 0.9:
+        return Notch.P5
+    elif value > 0.7:
+        return Notch.P4
+    elif value > 0.55:
+        return Notch.P3
+    elif value > 0.35:
+        return Notch.P2
+    elif value > 0.15:
+        return Notch.P1
+    elif value > -0.1:
+        return Notch.N
+    elif value > -0.25:
+        return Notch.B1
+    elif value > -0.35:
+        return Notch.B2
+    elif value > -0.5:
+        return Notch.B3
+    elif value > -0.6:
+        return Notch.B4
+    elif value > -0.7:
+        return Notch.B5
+    elif value > -0.8:
+        return Notch.B6
+    elif value > -0.9:
+        return Notch.B7
+    elif ZuikiMasconButton.ZL in pressed_buttons:
+        return Notch.EB
+    else:
+        return Notch.B8
+
+
+def update_notch(next_notch: Notch) -> None:
+    global notch
+
+    if Notch.N <= notch < next_notch:
+        press("z", next_notch - notch)
+    elif notch <= Notch.N and next_notch == Notch.EB:
+        press("/")
+    elif next_notch < notch <= Notch.N:
+        press(".", notch - next_notch)
+    elif notch >= Notch.P1:
+        if next_notch >= Notch.P1:
+            press("a", notch - next_notch)
+        else:
+            press("s")
+            notch = Notch.N
+            return update_notch(next_notch)
+    elif notch <= Notch.B1:
+        if next_notch <= Notch.B1:
+            press(",", next_notch - notch)
+        else:
+            press("m")
+            notch = Notch.N
+            return update_notch(next_notch)
+
+    notch = next_notch
+
+
 def handle_axis_motion(value: float) -> None:
     global notch
 
-    if value > 0.9:
-        next_notch = Notch.P5
-    elif value > 0.7:
-        next_notch = Notch.P4
-    elif value > 0.55:
-        next_notch = Notch.P3
-    elif value > 0.35:
-        next_notch = Notch.P2
-    elif value > 0.15:
-        next_notch = Notch.P1
-    elif value > -0.1:
-        next_notch = Notch.N
-    elif value > -0.25:
-        next_notch = Notch.B1
-    elif value > -0.35:
-        next_notch = Notch.B2
-    elif value > -0.5:
-        next_notch = Notch.B3
-    elif value > -0.6:
-        next_notch = Notch.B4
-    elif value > -0.7:
-        next_notch = Notch.B5
-    elif value > -0.8:
-        next_notch = Notch.B6
-    elif value > -0.9:
-        next_notch = Notch.B7
-    elif ZuikiMasconButton.ZL in pressed_buttons:
-        next_notch = Notch.EB
-    else:
-        next_notch = Notch.B8
-
-    if next_notch == Notch.EB:
-        pyautogui.press("1")
-    elif next_notch == Notch.N:
-        pyautogui.press("s")
-    elif next_notch < notch:
-        pyautogui.press("q", notch - next_notch)
-    elif notch < next_notch:
-        pyautogui.press("z", next_notch - notch)
-
-    notch = next_notch
+    next_notch = get_notch(value)
+    update_notch(next_notch)
 
 
 def handle_button_down(button: ZuikiMasconButton) -> None:
@@ -149,7 +171,7 @@ def handle_button_down(button: ZuikiMasconButton) -> None:
     if button == ZuikiMasconButton.ZL:
         pressed_buttons.add(ZuikiMasconButton.ZL)
         if notch == Notch.B8:
-            pyautogui.press("1")
+            press("/")
             notch = Notch.EB
     else:
         key_down(button)
@@ -161,7 +183,7 @@ def handle_button_up(button: ZuikiMasconButton) -> None:
     if button == ZuikiMasconButton.ZL:
         pressed_buttons.remove(ZuikiMasconButton.ZL)
         if notch == Notch.EB:
-            pyautogui.press("z")
+            press(",")
             notch = Notch.B8
     else:
         key_up(button)
