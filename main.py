@@ -159,8 +159,6 @@ def update_notch(next_notch: Notch) -> None:
 
 
 def handle_axis_motion(value: float) -> None:
-    global notch
-
     next_notch = get_notch(value)
     update_notch(next_notch)
 
