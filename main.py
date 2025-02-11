@@ -2,6 +2,8 @@ import sys
 from enum import Enum, IntEnum, auto
 
 import pygame
+import pyautogui
+from pyautogui import press
 
 
 class ZuikiMasconButton(IntEnum):
@@ -129,36 +131,33 @@ def get_notch(value: float, is_zl_button_pressed: bool) -> Notch:
         return Notch.B8
 
 
-def update_notch(next_notch: Notch) -> None:
-    global notch
-
-    if Notch.N <= notch < next_notch:
-        press("z", next_notch - notch)
-    elif notch <= Notch.N and next_notch == Notch.EB:
+def update_notch(current: Notch, next: Notch) -> None:
+    if Notch.N <= current < next:
+        press("z", next - current)
+    elif current <= Notch.N and next == Notch.EB:
         press("/")
-    elif next_notch < notch <= Notch.N:
-        press(".", notch - next_notch)
-    elif notch >= Notch.P1:
-        if next_notch >= Notch.P1:
-            press("a", notch - next_notch)
+    elif next < current <= Notch.N:
+        press(".", current - next)
+    elif current >= Notch.P1:
+        if next >= Notch.P1:
+            press("a", current - next)
         else:
             press("s")
-            notch = Notch.N
-            return update_notch(next_notch)
-    elif notch <= Notch.B1:
-        if next_notch <= Notch.B1:
-            press(",", next_notch - notch)
+            return update_notch(Notch.N, next)
+    elif current <= Notch.B1:
+        if next <= Notch.B1:
+            press(",", next - current)
         else:
             press("m")
-            notch = Notch.N
-            return update_notch(next_notch)
-
-    notch = next_notch
+            return update_notch(Notch.N, next)
 
 
 def handle_axis_motion(value: float) -> None:
+    global notch
+
     next_notch = get_notch(value, ZuikiMasconButton.ZL in pressed_buttons)
-    update_notch(next_notch)
+    update_notch(notch, next_notch)
+    notch = next_notch
 
 
 def handle_button_down(button: ZuikiMasconButton) -> None:
@@ -201,9 +200,6 @@ def handle_hat_motion(x: int, y: int) -> None:
 
 
 if __name__ == "__main__":
-    import pyautogui
-    from pyautogui import press
-
     notch: Notch = Notch.N
     pressed_buttons = set[ZuikiMasconButton | DpadButton]()
 
