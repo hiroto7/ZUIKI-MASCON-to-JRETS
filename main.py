@@ -44,7 +44,7 @@ class Notch(IntEnum):
     EB = -9
 
 
-MAPPING_TO_KEYBOARD: dict[ZuikiMasconButton | DpadButton, str | tuple[str, str]] = {
+MAPPING_TO_KEYBOARD: dict[ZuikiMasconButton | DpadButton, str | tuple[str, ...]] = {
     # 警笛（2段目）
     ZuikiMasconButton.A: "backspace",
     # 警笛（1段目）
@@ -78,22 +78,22 @@ MAPPING_TO_KEYBOARD: dict[ZuikiMasconButton | DpadButton, str | tuple[str, str]]
 }
 
 
-def key_down(button: ZuikiMasconButton | DpadButton) -> None:
+def map_to_keys(button: ZuikiMasconButton | DpadButton) -> tuple[str, ...]:
     match MAPPING_TO_KEYBOARD[button]:
-        case (*keys,):
-            for key in keys:
-                pyautogui.keyDown(key)
+        case tuple() as keys:
+            return keys
         case key:
-            pyautogui.keyDown(key)
+            return (key,)
+
+
+def key_down(button: ZuikiMasconButton | DpadButton) -> None:
+    for key in map_to_keys(button):
+        pyautogui.keyDown(key)
 
 
 def key_up(button: ZuikiMasconButton | DpadButton) -> None:
-    match MAPPING_TO_KEYBOARD[button]:
-        case (*keys,):
-            for key in reversed(keys):
-                pyautogui.keyUp(key)
-        case key:
-            pyautogui.keyUp(key)
+    for key in map_to_keys(button):
+        pyautogui.keyUp(key)
 
 
 def get_notch(value: float, is_zl_button_pressed: bool) -> Notch:
