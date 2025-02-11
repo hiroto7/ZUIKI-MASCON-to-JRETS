@@ -1,9 +1,7 @@
 import sys
 from enum import Enum, IntEnum, auto
 
-import pyautogui
 import pygame
-from pyautogui import press
 
 
 class ZuikiMasconButton(IntEnum):
@@ -98,7 +96,7 @@ def key_up(button: ZuikiMasconButton | DpadButton) -> None:
             pyautogui.keyUp(key)
 
 
-def get_notch(value: float) -> Notch:
+def get_notch(value: float, is_zl_button_pressed: bool) -> Notch:
     if value > 0.9:
         return Notch.P5
     elif value > 0.7:
@@ -125,7 +123,7 @@ def get_notch(value: float) -> Notch:
         return Notch.B6
     elif value > -0.9:
         return Notch.B7
-    elif ZuikiMasconButton.ZL in pressed_buttons:
+    elif is_zl_button_pressed:
         return Notch.EB
     else:
         return Notch.B8
@@ -159,7 +157,7 @@ def update_notch(next_notch: Notch) -> None:
 
 
 def handle_axis_motion(value: float) -> None:
-    next_notch = get_notch(value)
+    next_notch = get_notch(value, ZuikiMasconButton.ZL in pressed_buttons)
     update_notch(next_notch)
 
 
@@ -202,25 +200,29 @@ def handle_hat_motion(x: int, y: int) -> None:
             pressed_buttons.remove(direction)
 
 
-notch: Notch = Notch.N
-pressed_buttons = set[ZuikiMasconButton | DpadButton]()
+if __name__ == "__main__":
+    import pyautogui
+    from pyautogui import press
 
-pygame.init()
-joystick = pygame.joystick.Joystick(0)
+    notch: Notch = Notch.N
+    pressed_buttons = set[ZuikiMasconButton | DpadButton]()
 
-while True:
-    for event in pygame.event.get():
-        match event.type:
-            case pygame.JOYAXISMOTION:
-                handle_axis_motion(event.dict["value"])
-            case pygame.JOYBUTTONDOWN:
-                handle_button_down(ZuikiMasconButton(event.dict["button"]))
-            case pygame.JOYBUTTONUP:
-                handle_button_up(ZuikiMasconButton(event.dict["button"]))
-            case pygame.JOYHATMOTION:
-                handle_hat_motion(*event.dict["value"])
-            case _:
-                pass
+    pygame.init()
+    joystick = pygame.joystick.Joystick(0)
 
-        if "-v" in sys.argv[1:]:
-            print(notch.name, {button.name for button in pressed_buttons})
+    while True:
+        for event in pygame.event.get():
+            match event.type:
+                case pygame.JOYAXISMOTION:
+                    handle_axis_motion(event.dict["value"])
+                case pygame.JOYBUTTONDOWN:
+                    handle_button_down(ZuikiMasconButton(event.dict["button"]))
+                case pygame.JOYBUTTONUP:
+                    handle_button_up(ZuikiMasconButton(event.dict["button"]))
+                case pygame.JOYHATMOTION:
+                    handle_hat_motion(*event.dict["value"])
+                case _:
+                    pass
+
+            if "-v" in sys.argv[1:]:
+                print(notch.name, {button.name for button in pressed_buttons})
