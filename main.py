@@ -217,6 +217,8 @@ if __name__ == "__main__":
                     handle_button_up(ZuikiMasconButton(event.dict["button"]))
                 case pygame.JOYHATMOTION:
                     handle_hat_motion(*event.dict["value"])
+                case pygame.QUIT:
+                    sys.exit()
                 case _:
                     pass
 

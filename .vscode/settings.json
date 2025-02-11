@@ -5,7 +5,12 @@
     "JOYBUTTONUP",
     "JOYHATMOTION",
     "JRETS",
+    "noconsole",
+    "onefile",
     "pyautogui",
+    "pyinstaller",
+    "pytest",
+    "softprops",
     "ZUIKI"
   ]
 }
