@@ -10,7 +10,7 @@ JRETSは2024年5月からズイキマスコンを公式にサポートするよ�
 
 ## 動作環境
 
-macOS上のGeForce NOWで動作するように開発しています。
+macOS上のGeForce NOWで動作するように開発しています。以下の環境での動作を確認しています。
 
 - Mac mini (2024)
 - macOS Sequoia 15.3
@@ -19,25 +19,37 @@ macOS上のGeForce NOWで動作するように開発しています。
 - JR東日本トレインシミュレータ Ver. 1.0.1.561
 - GeForce NOW 2.0.70.167
 
+Windows / Linuxでは動作を確認していません。
+
 ## 使い方
 
-1. リポジトリをクローンする
+### macOSでアプリケーションをダウンロードして開く場合
+
+1. [最新のRelease](https://github.com/hiroto7/ZUIKI-MASCON-to-JRETS/releases/latest)で ZUIKI-MASCON-to-JRETS.app.zip をダウンロードする
+2. ダウンロードしたファイルを展開し、 ZUIKI-MASCON-to-JRETS.app を起動する
+   - 「Appleは、“ZUIKI-MASCON-to-JRETS”にMacに損害を与えたり、プライバシーを侵害する可能性のあるマルウェアが含まれていないことを検証できませんでした」と警告され起動できない場合、 https://support.apple.com/ja-jp/guide/mac-help/mh40616/mac の手順に従って開く
+3. Dockに ZUIKI-MASCON-to-JRETS のアイコンが表示されたら、JRETSの運転画面に進む
+4. 一度マスコンをNまたはEBに合わせる
+   - 「アクセシビリティ機能を使用してこのコンピュータを制御することを求めています」と表示された場合は、アクセスを許可する
+5. 運転を開始する
+6. 終了方法：Dockの ZUIKI-MASCON-to-JRETS のアイコンを右クリックして「終了」を選択する
+
+### コマンドラインから実行する場合
+
+1. リポジトリをクローンしてパッケージをインストールする
    ```
    git clone https://github.com/hiroto7/ZUIKI-MASCON-to-JRETS.git
-   ```
-2. パッケージをインストールする
-   ```
    cd ZUIKI-MASCON-to-JRETS
-   pip3 install -r requirements.txt
+   pip3 install pygame pyautogui
    ```
-3. main.py を実行する
+2. main.py を実行する
    ```
    python3 main.py
    ```
-4. この状態でJRETSの運転画面に進み、一度マスコンをNまたはEBに合わせる
+3. この状態でJRETSの運転画面に進み、一度マスコンをNまたはEBに合わせる
    - Macで「アクセシビリティ機能を使用してこのコンピュータを制御することを求めています」と表示された場合は、アクセスを許可する
-5. 運転を開始する
-6. ターミナルに戻り、<kbd>control</kbd> + <kbd>c</kbd> で終了
+4. 運転を開始する
+5. 終了方法：ターミナルに戻り、 <kbd>control</kbd> + <kbd>c</kbd> を押す
 
 ## ボタンのマッピング
 
