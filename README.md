@@ -13,11 +13,11 @@ JRETSは2024年5月からズイキマスコンを公式にサポートするよ�
 macOS上のGeForce NOWで動作するように開発しています。以下の環境での動作を確認しています。
 
 - Mac mini (2024)
-- macOS Sequoia 15.3
+- macOS Sequoia 15.3.1
 - Python 3.13.1
 - ズイキマスコン ZKNS-013
-- JR東日本トレインシミュレータ Ver. 1.0.1.561
-- GeForce NOW 2.0.70.167
+- JR東日本トレインシミュレータ Ver. 1.0.1.582
+- GeForce NOW 2.0.71.162
 
 Windows / Linuxでは動作を確認していません。
 

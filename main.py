@@ -76,7 +76,7 @@ MAPPING_TO_KEYBOARD: dict[ZuikiMasconButton | DpadButton, str | tuple[str, ...]]
     # 連絡ブザースイッチ
     DpadButton.LEFT: "b",
     # 勾配起動ボタン
-    DpadButton.RIGHT: "k",
+    DpadButton.RIGHT: "g",
 }
 
 
