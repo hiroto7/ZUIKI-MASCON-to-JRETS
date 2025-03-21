@@ -205,6 +205,7 @@ if __name__ == "__main__":
 
     pygame.init()
     joystick = pygame.joystick.Joystick(0)
+    pygame.display.set_allow_screensaver(True)
 
     while True:
         for event in pygame.event.get():
