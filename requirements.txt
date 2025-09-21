@@ -9,7 +9,7 @@ pygame==2.6.1
 PyGetWindow==0.0.9
 pyinstaller==6.12.0
 pyinstaller-hooks-contrib==2025.1
-PyMsgBox==1.0.9
+PyMsgBox==2.0.1
 pyobjc-core==11.0
 pyobjc-framework-Cocoa==11.0
 pyobjc-framework-Quartz==11.0
