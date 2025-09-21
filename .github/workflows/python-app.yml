@@ -40,6 +40,10 @@ jobs:
       - run: pyinstaller --name "$APP_NAME" --onefile --noconsole main.py
       - run: zip -r "$APP_NAME.app.zip" "$APP_NAME.app"
         working-directory: dist
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: ${{ env.APP_NAME }}.app
+          path: dist/${{ env.APP_NAME }}.app.zip
       - uses: softprops/action-gh-release@6cbd405e2c4e67a21c47fa9e383d020e4e28b836 # v2.3.3
         if: startsWith(github.ref, 'refs/tags/')
         with:
