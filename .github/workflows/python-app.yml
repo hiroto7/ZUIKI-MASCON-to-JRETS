@@ -18,9 +18,9 @@ jobs:
     runs-on: macos-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
       - name: Set up Python 3.10
-        uses: actions/setup-python@v3
+        uses: actions/setup-python@3542bca2639a428e1796aaa6a2ffef0c0f575566 # v3.1.4
         with:
           python-version: "3.10"
       - name: Install dependencies
@@ -40,7 +40,7 @@ jobs:
       - run: pyinstaller --name "$APP_NAME" --onefile --noconsole main.py
       - run: zip -r "$APP_NAME.app.zip" "$APP_NAME.app"
         working-directory: dist
-      - uses: softprops/action-gh-release@v2
+      - uses: softprops/action-gh-release@6cbd405e2c4e67a21c47fa9e383d020e4e28b836 # v2.3.3
         if: startsWith(github.ref, 'refs/tags/')
         with:
           files: dist/${{ env.APP_NAME }}.app.zip
