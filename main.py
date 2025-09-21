@@ -204,12 +204,13 @@ if __name__ == "__main__":
     pressed_buttons = set[ZuikiMasconButton | DpadButton]()
 
     pygame.init()
-    joystick = pygame.joystick.Joystick(0)
     pygame.display.set_allow_screensaver(True)
 
     while True:
         for event in pygame.event.get():
             match event.type:
+                case pygame.JOYDEVICEADDED:
+                    joystick = pygame.joystick.Joystick(0)
                 case pygame.JOYAXISMOTION:
                     handle_axis_motion(event.dict["value"])
                 case pygame.JOYBUTTONDOWN:

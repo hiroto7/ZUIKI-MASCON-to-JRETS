@@ -3,6 +3,7 @@
     "JOYAXISMOTION",
     "JOYBUTTONDOWN",
     "JOYBUTTONUP",
+    "JOYDEVICEADDED",
     "JOYHATMOTION",
     "JRETS",
     "noconsole",
