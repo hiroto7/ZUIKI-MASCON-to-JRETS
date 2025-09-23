@@ -1,11 +1,7 @@
-import sys
-from unittest.mock import Mock, call
+from unittest.mock import call
 
 import pytest
 from pytest_mock import MockerFixture
-
-mock = Mock()
-sys.modules["pyautogui"] = mock
 
 from main import Notch, get_notch, update_notch
 
@@ -52,6 +48,6 @@ def test_get_notch() -> None:
 def test_update_notch(
     mocker: MockerFixture, current: Notch, next: Notch, calls: list[object]
 ) -> None:
-    press_mock = mocker.patch("main.press")
+    press_and_release_mock = mocker.patch("main.press_and_release")
     update_notch(current, next)
-    assert press_mock.call_args_list == calls
+    assert press_and_release_mock.call_args_list == calls

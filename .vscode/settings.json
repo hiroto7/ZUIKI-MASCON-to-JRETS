@@ -8,8 +8,8 @@
     "JRETS",
     "noconsole",
     "onefile",
-    "pyautogui",
     "pyinstaller",
+    "PYNPUT",
     "pytest",
     "softprops",
     "ZUIKI"

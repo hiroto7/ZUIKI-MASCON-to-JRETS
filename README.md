@@ -40,7 +40,7 @@ Windows / Linuxでは動作を確認していません。
    ```
    git clone https://github.com/hiroto7/ZUIKI-MASCON-to-JRETS.git
    cd ZUIKI-MASCON-to-JRETS
-   pip3 install pygame pyautogui
+   pip3 install pygame pynput
    ```
 2. main.py を実行する
    ```

@@ -2,8 +2,7 @@ import sys
 from enum import Enum, IntEnum, auto
 
 import pygame
-import pyautogui
-from pyautogui import press
+from pynput.keyboard import Controller, Key
 
 
 class ZuikiMasconButton(IntEnum):
@@ -46,15 +45,19 @@ class Notch(IntEnum):
     EB = -9
 
 
-MAPPING_TO_KEYBOARD: dict[ZuikiMasconButton | DpadButton, str | tuple[str, ...]] = {
+type KeyOrStr = str | Key
+
+MAPPING_TO_KEYBOARD: dict[
+    ZuikiMasconButton | DpadButton, KeyOrStr | tuple[KeyOrStr, ...]
+] = {
     # 警笛（2段目）
-    ZuikiMasconButton.A: "backspace",
+    ZuikiMasconButton.A: Key.backspace,
     # 警笛（1段目）
-    ZuikiMasconButton.B: "enter",
+    ZuikiMasconButton.B: Key.enter,
     # EBリセットボタン
     ZuikiMasconButton.X: "e",
     # ATS確認ボタン
-    ZuikiMasconButton.Y: "space",
+    ZuikiMasconButton.Y: Key.space,
     # 警報持続ボタン
     ZuikiMasconButton.L: "x",
     # 抑速1
@@ -64,15 +67,15 @@ MAPPING_TO_KEYBOARD: dict[ZuikiMasconButton | DpadButton, str | tuple[str, ...]]
     # 運転台表示切替
     ZuikiMasconButton.MINUS: "c",
     # ポーズ
-    ZuikiMasconButton.PLUS: "esc",
+    ZuikiMasconButton.PLUS: Key.esc,
     # [GeForce NOW] ゲーム内オーバーレイを開く / 閉じる
-    ZuikiMasconButton.HOME: ("command", "g"),
+    ZuikiMasconButton.HOME: (Key.cmd, "g"),
     # [GeForce NOW] スクリーンショットを保存する
-    ZuikiMasconButton.CAPTURE: ("command", "1"),
+    ZuikiMasconButton.CAPTURE: (Key.cmd, "1"),
     # レバーサ 前位置方向
-    DpadButton.UP: "up",
+    DpadButton.UP: Key.up,
     # レバーサ 後位置方向
-    DpadButton.DOWN: "down",
+    DpadButton.DOWN: Key.down,
     # 連絡ブザースイッチ
     DpadButton.LEFT: "b",
     # 勾配起動ボタン
@@ -80,7 +83,7 @@ MAPPING_TO_KEYBOARD: dict[ZuikiMasconButton | DpadButton, str | tuple[str, ...]]
 }
 
 
-def map_to_keys(button: ZuikiMasconButton | DpadButton) -> tuple[str, ...]:
+def map_to_keys(button: ZuikiMasconButton | DpadButton) -> tuple[KeyOrStr, ...]:
     match MAPPING_TO_KEYBOARD[button]:
         case tuple() as keys:
             return keys
@@ -90,12 +93,18 @@ def map_to_keys(button: ZuikiMasconButton | DpadButton) -> tuple[str, ...]:
 
 def key_down(button: ZuikiMasconButton | DpadButton) -> None:
     for key in map_to_keys(button):
-        pyautogui.keyDown(key)
+        keyboard.press(key)
 
 
 def key_up(button: ZuikiMasconButton | DpadButton) -> None:
     for key in map_to_keys(button):
-        pyautogui.keyUp(key)
+        keyboard.release(key)
+
+
+def press_and_release(key: str, times: int = 1) -> None:
+    for _ in range(times):
+        keyboard.press(key)
+        keyboard.release(key)
 
 
 def get_notch(value: float, is_zl_button_pressed: bool) -> Notch:
@@ -133,22 +142,22 @@ def get_notch(value: float, is_zl_button_pressed: bool) -> Notch:
 
 def update_notch(current: Notch, next: Notch) -> None:
     if Notch.N <= current < next:
-        press("z", next - current)
+        press_and_release("z", next - current)
     elif current <= Notch.N and next == Notch.EB:
-        press("/")
+        press_and_release("/")
     elif next < current <= Notch.N:
-        press(".", current - next)
+        press_and_release(".", current - next)
     elif current >= Notch.P1:
         if next >= Notch.P1:
-            press("a", current - next)
+            press_and_release("a", current - next)
         else:
-            press("s")
+            press_and_release("s")
             return update_notch(Notch.N, next)
     elif current <= Notch.B1:
         if next <= Notch.B1:
-            press(",", next - current)
+            press_and_release(",", next - current)
         else:
-            press("m")
+            press_and_release("m")
             return update_notch(Notch.N, next)
 
 
@@ -166,7 +175,7 @@ def handle_button_down(button: ZuikiMasconButton) -> None:
     pressed_buttons.add(button)
     if button == ZuikiMasconButton.ZL:
         if notch == Notch.B8:
-            press("/")
+            press_and_release("/")
             notch = Notch.EB
     else:
         key_down(button)
@@ -178,7 +187,7 @@ def handle_button_up(button: ZuikiMasconButton) -> None:
     pressed_buttons.remove(button)
     if button == ZuikiMasconButton.ZL:
         if notch == Notch.EB:
-            press(",")
+            press_and_release(",")
             notch = Notch.B8
     else:
         key_up(button)
@@ -205,6 +214,8 @@ if __name__ == "__main__":
 
     pygame.init()
     pygame.display.set_allow_screensaver(True)
+
+    keyboard = Controller()
 
     while True:
         for event in pygame.event.get():
