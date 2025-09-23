@@ -103,8 +103,7 @@ def key_up(button: ZuikiMasconButton | DpadButton) -> None:
 
 def press_and_release(key: str, times: int = 1) -> None:
     for _ in range(times):
-        keyboard.press(key)
-        keyboard.release(key)
+        keyboard.tap(key)
 
 
 def get_notch(value: float, is_zl_button_pressed: bool) -> Notch:
