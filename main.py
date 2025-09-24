@@ -1,4 +1,5 @@
 import sys
+import time
 from enum import Enum, IntEnum, auto
 
 import pygame
@@ -211,6 +212,8 @@ if __name__ == "__main__":
     pygame.init()
     pygame.display.set_allow_screensaver(True)
 
+    clock = pygame.time.Clock()
+
     while True:
         for event in pygame.event.get():
             match event.type:
@@ -231,3 +234,5 @@ if __name__ == "__main__":
 
             if "-v" in sys.argv[1:]:
                 print(notch.name, {button.name for button in pressed_buttons})
+
+        clock.tick(60)
