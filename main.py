@@ -97,6 +97,11 @@ def key_up(button: ZuikiMasconButton | DpadButton) -> None:
     for key in map_to_keys(button):
         pyautogui.keyUp(key)
 
+        # 矢印キーを押すとfnキーが押されたような状態になる問題への回避策
+        # https://github.com/asweigart/pyautogui/issues/796#issuecomment-1937049349
+        if key in ("up", "down", "left", "right"):
+            pyautogui.keyUp("fn")
+
 
 def get_notch(value: float, is_zl_button_pressed: bool) -> Notch:
     if value > 0.9:
