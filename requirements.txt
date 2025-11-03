@@ -11,7 +11,7 @@ Pygments==2.19.2
 pyinstaller==6.16.0
 pyinstaller-hooks-contrib==2025.9
 PyMsgBox==2.0.1
-pyobjc-core==11.1
+pyobjc-core==12.0
 pyobjc-framework-Cocoa==11.1
 pyobjc-framework-Quartz==11.1
 pyperclip==1.11.0
