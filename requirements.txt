@@ -9,7 +9,7 @@ pygame==2.6.1
 PyGetWindow==0.0.9
 Pygments==2.19.2
 pyinstaller==6.17.0
-pyinstaller-hooks-contrib==2025.10
+pyinstaller-hooks-contrib==2025.11
 PyMsgBox==2.0.1
 pyobjc-core==12.1
 pyobjc-framework-Cocoa==12.1
@@ -17,8 +17,8 @@ pyobjc-framework-Quartz==12.1
 pyperclip==1.11.0
 PyRect==0.2.0
 PyScreeze==1.0.1
-pytest==9.0.1
+pytest==9.0.2
 pytest-mock==3.15.1
 pytweening==1.2.0
-rubicon-objc==0.5.2
+rubicon-objc==0.5.3
 setuptools==80.9.0
