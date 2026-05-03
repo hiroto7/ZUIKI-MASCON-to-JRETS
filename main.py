@@ -1,10 +1,17 @@
+import argparse
 import sys
-import time
+from dataclasses import dataclass
 from enum import Enum, IntEnum, auto
 
 import pygame
 import pyautogui
 from pyautogui import press
+
+
+class TrainProfile(Enum):
+    DEFAULT = auto()
+    TOBU = auto()
+    SEIBU = auto()
 
 
 class ZuikiMasconButton(IntEnum):
@@ -47,6 +54,19 @@ class Notch(IntEnum):
     EB = -9
 
 
+@dataclass(frozen=True)
+class ProfileLimit:
+    max_power: Notch
+    max_brake: Notch
+
+
+PROFILE_LIMITS: dict[TrainProfile, ProfileLimit] = {
+    TrainProfile.DEFAULT: ProfileLimit(max_power=Notch.P5, max_brake=Notch.B8),
+    TrainProfile.TOBU: ProfileLimit(max_power=Notch.P3, max_brake=Notch.B7),
+    TrainProfile.SEIBU: ProfileLimit(max_power=Notch.P4, max_brake=Notch.B7),
+}
+
+
 MAPPING_TO_KEYBOARD: dict[ZuikiMasconButton | DpadButton, str | tuple[str, ...]] = {
     # 警笛（2段目）
     ZuikiMasconButton.A: "backspace",
@@ -79,6 +99,18 @@ MAPPING_TO_KEYBOARD: dict[ZuikiMasconButton | DpadButton, str | tuple[str, ...]]
     # 勾配起動ボタン
     DpadButton.RIGHT: "g",
 }
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--profile",
+        choices=("default", "tobu", "seibu"),
+        default="default",
+        help="Train profile for notch limits. default preserves the previous behavior.",
+    )
+    parser.add_argument("-v", "--verbose", action="store_true")
+    return parser.parse_args()
 
 
 def map_to_keys(button: ZuikiMasconButton | DpadButton) -> tuple[str, ...]:
@@ -137,55 +169,80 @@ def get_notch(value: float, is_zl_button_pressed: bool) -> Notch:
         return Notch.B8
 
 
-def update_notch(current: Notch, next: Notch) -> None:
-    if Notch.N <= current < next:
-        press("z", next - current)
-    elif current <= Notch.N and next == Notch.EB:
+def project_notch(raw_notch: Notch, profile_limit: ProfileLimit) -> Notch:
+    if raw_notch >= Notch.P1:
+        return min(raw_notch, profile_limit.max_power)
+    elif Notch.EB < raw_notch <= Notch.B1:
+        return max(raw_notch, profile_limit.max_brake)
+    else:
+        return raw_notch
+
+
+def update_notch(current: Notch, next_notch: Notch, max_brake: Notch) -> None:
+    if current == next_notch:
+        return
+    elif Notch.N <= current < next_notch:
+        press("z", next_notch - current)
+    elif current <= Notch.N and next_notch == Notch.EB:
         press("/")
-    elif next < current <= Notch.N:
-        press(".", current - next)
+    elif next_notch < current <= Notch.N:
+        press(".", current - next_notch)
     elif current >= Notch.P1:
-        if next >= Notch.P1:
-            press("a", current - next)
+        if next_notch >= Notch.P1:
+            press("a", current - next_notch)
         else:
             press("s")
-            return update_notch(Notch.N, next)
+            return update_notch(Notch.N, next_notch, max_brake)
     elif current <= Notch.B1:
-        if next <= Notch.B1:
-            press(",", next - current)
+        if next_notch <= Notch.B1:
+            if current == Notch.EB:
+                presses = next_notch - max_brake + 1
+            else:
+                presses = next_notch - current
+            press(",", presses)
         else:
             press("m")
-            return update_notch(Notch.N, next)
+            return update_notch(Notch.N, next_notch, max_brake)
 
 
 def handle_axis_motion(value: float) -> None:
+    global raw_notch
     global notch
 
-    next_notch = get_notch(value, ZuikiMasconButton.ZL in pressed_buttons)
-    update_notch(notch, next_notch)
+    next_raw_notch = get_notch(value, ZuikiMasconButton.ZL in pressed_buttons)
+    next_notch = project_notch(next_raw_notch, profile_limit)
+
+    update_notch(notch, next_notch, profile_limit.max_brake)
+
+    raw_notch = next_raw_notch
     notch = next_notch
 
 
 def handle_button_down(button: ZuikiMasconButton) -> None:
+    global raw_notch
     global notch
 
     pressed_buttons.add(button)
     if button == ZuikiMasconButton.ZL:
-        if notch == Notch.B8:
-            press("/")
+        if raw_notch == Notch.B8:
+            update_notch(notch, Notch.EB, profile_limit.max_brake)
+            raw_notch = Notch.EB
             notch = Notch.EB
     else:
         key_down(button)
 
 
 def handle_button_up(button: ZuikiMasconButton) -> None:
+    global raw_notch
     global notch
 
     pressed_buttons.remove(button)
     if button == ZuikiMasconButton.ZL:
         if notch == Notch.EB:
-            press(",")
-            notch = Notch.B8
+            raw_notch = Notch.B8
+            next_notch = project_notch(raw_notch, profile_limit)
+            update_notch(notch, next_notch, profile_limit.max_brake)
+            notch = next_notch
     else:
         key_up(button)
 
@@ -206,6 +263,11 @@ def handle_hat_motion(x: int, y: int) -> None:
 
 
 if __name__ == "__main__":
+    args = parse_args()
+    profile = TrainProfile[args.profile.upper()]
+    profile_limit = PROFILE_LIMITS[profile]
+
+    raw_notch: Notch = Notch.N
     notch: Notch = Notch.N
     pressed_buttons = set[ZuikiMasconButton | DpadButton]()
 
@@ -232,7 +294,7 @@ if __name__ == "__main__":
                 case _:
                     pass
 
-            if "-v" in sys.argv[1:]:
-                print(notch.name, {button.name for button in pressed_buttons})
+            if args.verbose:
+                print(notch.name, raw_notch.name, {button.name for button in pressed_buttons})
 
         clock.tick(60)
