@@ -109,6 +109,11 @@ def parse_args() -> argparse.Namespace:
         default="default",
         help="Train profile for notch limits. default preserves the previous behavior.",
     )
+    parser.add_argument(
+        "--fake-axis-mouse",
+        action="store_true",
+        help="Use the mouse position in a pygame window as a fake mascon axis.",
+    )
     parser.add_argument("-v", "--verbose", action="store_true")
     return parser.parse_args()
 
@@ -167,6 +172,57 @@ def get_notch(value: float, is_zl_button_pressed: bool) -> Notch:
         return Notch.EB
     else:
         return Notch.B8
+
+
+def clamp(value: float, lower: float, upper: float) -> float:
+    return max(lower, min(upper, value))
+
+
+def mouse_y_to_mascon_value(mouse_y: int, height: int) -> float:
+    return clamp((height / 2 - mouse_y) / (height / 2), -1.0, 1.0)
+
+
+def post_fake_axis_motion(value: float) -> None:
+    pygame.event.post(
+        pygame.event.Event(
+            pygame.JOYAXISMOTION,
+            {
+                "joy": 0,
+                "instance_id": 0,
+                "axis": 1,
+                "value": value,
+            },
+        )
+    )
+
+
+def draw_fake_axis_window(
+    screen: pygame.Surface, value: float, raw_notch: Notch, notch: Notch
+) -> None:
+    width, height = screen.get_size()
+    center_x = width // 2
+    top = 32
+    bottom = height - 32
+    rail_height = bottom - top
+    handle_y = int(top + (1.0 - value) * rail_height / 2)
+
+    screen.fill((30, 34, 38))
+    pygame.draw.line(screen, (180, 186, 194), (center_x, top), (center_x, bottom), 2)
+    pygame.draw.circle(screen, (240, 244, 248), (center_x, handle_y), 12)
+
+    font = pygame.font.Font(None, 24)
+    lines = [
+        "Fake ZUIKI mascon axis",
+        f"value={value:.3f}",
+        f"raw_notch={raw_notch.name}",
+        f"notch={notch.name}",
+        "Move mouse up/down. Hold Space for ZL/EB.",
+    ]
+    for index, line in enumerate(lines):
+        text = font.render(line, True, (240, 244, 248))
+        screen.blit(text, (24, 20 + index * 26))
+
+    pygame.display.flip()
 
 
 def project_notch(raw_notch: Notch, profile_limit: ProfileLimit) -> Notch:
@@ -273,16 +329,32 @@ if __name__ == "__main__":
 
     pygame.init()
     pygame.display.set_allow_screensaver(True)
+    screen = None
+    if args.fake_axis_mouse:
+        screen = pygame.display.set_mode((360, 420))
+        pygame.display.set_caption("ZUIKI fake axis")
 
     clock = pygame.time.Clock()
 
     while True:
+        fake_axis_value = None
+        if screen is not None:
+            _, mouse_y = pygame.mouse.get_pos()
+            fake_axis_value = mouse_y_to_mascon_value(mouse_y, screen.get_height())
+            post_fake_axis_motion(fake_axis_value)
+
         for event in pygame.event.get():
             match event.type:
                 case pygame.JOYDEVICEADDED:
                     joystick = pygame.joystick.Joystick(0)
                 case pygame.JOYAXISMOTION:
                     handle_axis_motion(event.dict["value"])
+                case pygame.KEYDOWN if args.fake_axis_mouse and event.key == pygame.K_SPACE:
+                    if ZuikiMasconButton.ZL not in pressed_buttons:
+                        handle_button_down(ZuikiMasconButton.ZL)
+                case pygame.KEYUP if args.fake_axis_mouse and event.key == pygame.K_SPACE:
+                    if ZuikiMasconButton.ZL in pressed_buttons:
+                        handle_button_up(ZuikiMasconButton.ZL)
                 case pygame.JOYBUTTONDOWN:
                     handle_button_down(ZuikiMasconButton(event.dict["button"]))
                 case pygame.JOYBUTTONUP:
@@ -296,5 +368,8 @@ if __name__ == "__main__":
 
             if args.verbose:
                 print(notch.name, raw_notch.name, {button.name for button in pressed_buttons})
+
+        if screen is not None and fake_axis_value is not None:
+            draw_fake_axis_window(screen, fake_axis_value, raw_notch, notch)
 
         clock.tick(60)

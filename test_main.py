@@ -12,6 +12,7 @@ from main import (
     PROFILE_LIMITS,
     TrainProfile,
     get_notch,
+    mouse_y_to_mascon_value,
     project_notch,
     update_notch,
 )
@@ -33,6 +34,20 @@ def test_get_notch() -> None:
     assert get_notch(-0.8510086367381817, False) == Notch.B7
     assert get_notch(-0.9608142338328196, False) == Notch.B8
     assert get_notch(-1.000030518509476, True) == Notch.EB
+
+
+@pytest.mark.parametrize(
+    ("mouse_y", "height", "expected"),
+    [
+        pytest.param(0, 400, 1.0, id="top edge"),
+        pytest.param(200, 400, 0.0, id="center"),
+        pytest.param(400, 400, -1.0, id="bottom edge"),
+        pytest.param(-100, 400, 1.0, id="above window clamps to power max"),
+        pytest.param(500, 400, -1.0, id="below window clamps to brake max"),
+    ],
+)
+def test_mouse_y_to_mascon_value(mouse_y: int, height: int, expected: float) -> None:
+    assert mouse_y_to_mascon_value(mouse_y, height) == expected
 
 
 @pytest.mark.parametrize(
