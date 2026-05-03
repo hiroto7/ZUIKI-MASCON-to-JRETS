@@ -11,7 +11,9 @@
     "pyautogui",
     "pyinstaller",
     "pytest",
+    "SEIBU",
     "softprops",
+    "TOBU",
     "ZUIKI"
   ]
 }
