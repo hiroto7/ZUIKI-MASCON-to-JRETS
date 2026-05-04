@@ -49,6 +49,18 @@ Windows / Linuxでは動作を確認していません。
    ```
    uv run python main.py
    ```
+   東武・西武の車両を運転する場合は、車両に合わせて `--profile` を指定する
+   ```
+   uv run python main.py --profile tobu
+   uv run python main.py --profile seibu
+   ```
+   `--profile` を指定しない場合は `default` として動作する
+
+   | profile | 最大力行 | 最大常用ブレーキ |
+   | --- | --- | --- |
+   | `default` | P5 | B8 |
+   | `tobu` | P3 | B7 |
+   | `seibu` | P4 | B7 |
 4. この状態でJRETSの運転画面に進み、一度マスコンをNまたはEBに合わせる
    - Macで「アクセシビリティ機能を使用してこのコンピュータを制御することを求めています」と表示された場合は、アクセスを許可する
 5. 運転を開始する
