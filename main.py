@@ -1,7 +1,14 @@
 import argparse
+import json
+import queue
+import socket
 import sys
+import threading
 from dataclasses import dataclass
 from enum import Enum, IntEnum, auto
+from http import HTTPStatus
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
 
 import pygame
 import pyautogui
@@ -109,6 +116,22 @@ def parse_args() -> argparse.Namespace:
         default="default",
         help="Train profile for notch limits. default preserves the previous behavior.",
     )
+    parser.add_argument(
+        "--fake-notch-web",
+        action="store_true",
+        help="Serve a phone-friendly web controller for fake mascon notch input.",
+    )
+    parser.add_argument(
+        "--fake-notch-web-host",
+        default="0.0.0.0",
+        help="Host for --fake-notch-web. Use 0.0.0.0 to accept phone connections.",
+    )
+    parser.add_argument(
+        "--fake-notch-web-port",
+        type=int,
+        default=8765,
+        help="Port for --fake-notch-web.",
+    )
     parser.add_argument("-v", "--verbose", action="store_true")
     return parser.parse_args()
 
@@ -169,6 +192,133 @@ def get_notch(value: float, is_zl_button_pressed: bool) -> Notch:
         return Notch.B8
 
 
+def fake_notch_options(profile_limit: ProfileLimit) -> tuple[Notch, ...]:
+    return tuple(
+        reversed(
+            tuple(
+                notch
+                for notch in Notch
+                if notch == Notch.EB
+                or profile_limit.max_brake <= notch <= profile_limit.max_power
+            )
+        )
+    )
+
+
+def build_fake_notch_web_html(
+    profile_name: str,
+    current_notch: Notch,
+    profile_limit: ProfileLimit,
+) -> bytes:
+    notch_names = tuple(notch.name for notch in fake_notch_options(profile_limit))
+    notch_labels = "\n".join(
+        f'      <button class="tick" type="button" data-notch="{notch_name}">'
+        f"{notch_name}</button>"
+        for notch_name in notch_names
+    )
+    template = (Path(__file__).with_name("web") / "fake_notch.html").read_text()
+    html = (
+        template.replace("__PROFILE_NAME__", profile_name)
+        .replace("__NOTCH_LABELS__", notch_labels)
+        .replace("__NOTCH_NAMES_JSON__", json.dumps(notch_names))
+        .replace("__CURRENT_NOTCH__", current_notch.name)
+    )
+    return html.encode()
+
+
+def get_lan_ip() -> str | None:
+    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+        try:
+            sock.connect(("8.8.8.8", 80))
+            return sock.getsockname()[0]
+        except OSError:
+            return None
+
+
+def make_fake_notch_web_handler(
+    input_queue: queue.Queue[Notch],
+    profile_name: str,
+    current_notch: Notch,
+    profile_limit: ProfileLimit,
+) -> type[BaseHTTPRequestHandler]:
+    class FakeNotchWebHandler(BaseHTTPRequestHandler):
+        def send_json(self, status: HTTPStatus, body: dict[str, object]) -> None:
+            encoded = json.dumps(body).encode()
+            self.send_response(status)
+            self.send_header("content-type", "application/json")
+            self.send_header("content-length", str(len(encoded)))
+            self.end_headers()
+            self.wfile.write(encoded)
+
+        def read_json(self) -> dict[str, object]:
+            length = int(self.headers.get("content-length", "0"))
+            return json.loads(self.rfile.read(length) or b"{}")
+
+        def do_GET(self) -> None:
+            if self.path not in ("/", "/index.html"):
+                self.send_json(HTTPStatus.NOT_FOUND, {"ok": False})
+                return
+
+            body = build_fake_notch_web_html(
+                profile_name,
+                current_notch,
+                profile_limit,
+            )
+            self.send_response(HTTPStatus.OK)
+            self.send_header("content-type", "text/html; charset=utf-8")
+            self.send_header("content-length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        def do_POST(self) -> None:
+            try:
+                payload = self.read_json()
+                if self.path != "/notch":
+                    self.send_json(HTTPStatus.NOT_FOUND, {"ok": False})
+                    return
+
+                next_notch = Notch[str(payload["notch"])]
+                if next_notch not in fake_notch_options(profile_limit):
+                    raise ValueError("unsupported notch for profile")
+                input_queue.put(next_notch)
+            except (KeyError, TypeError, ValueError, json.JSONDecodeError) as error:
+                self.send_json(HTTPStatus.BAD_REQUEST, {"ok": False, "error": str(error)})
+                return
+
+            self.send_json(HTTPStatus.OK, {"ok": True})
+
+        def log_message(self, format: str, *args: object) -> None:
+            return
+
+    return FakeNotchWebHandler
+
+
+def start_fake_notch_web_server(
+    host: str,
+    port: int,
+    input_queue: queue.Queue[Notch],
+    profile_name: str,
+    current_notch: Notch,
+    profile_limit: ProfileLimit,
+) -> ThreadingHTTPServer:
+    server = ThreadingHTTPServer(
+        (host, port),
+        make_fake_notch_web_handler(
+            input_queue,
+            profile_name,
+            current_notch,
+            profile_limit,
+        ),
+    )
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    actual_port = server.server_address[1]
+    print(f"Fake notch web controller: http://127.0.0.1:{actual_port}/")
+    if host in ("0.0.0.0", "") and (lan_ip := get_lan_ip()):
+        print(f"Phone URL: http://{lan_ip}:{actual_port}/")
+    return server
+
+
 def project_notch(raw_notch: Notch, profile_limit: ProfileLimit) -> Notch:
     if raw_notch >= Notch.P1:
         return min(raw_notch, profile_limit.max_power)
@@ -218,6 +368,16 @@ def handle_axis_motion(value: float) -> None:
     notch = next_notch
 
 
+def handle_fake_notch_input(next_notch: Notch) -> None:
+    global raw_notch
+    global notch
+
+    update_notch(notch, next_notch, profile_limit.max_brake)
+
+    raw_notch = next_notch
+    notch = next_notch
+
+
 def handle_button_down(button: ZuikiMasconButton) -> None:
     global raw_notch
     global notch
@@ -262,6 +422,10 @@ def handle_hat_motion(x: int, y: int) -> None:
             pressed_buttons.remove(direction)
 
 
+def print_state() -> None:
+    print(notch.name, raw_notch.name, {button.name for button in pressed_buttons})
+
+
 if __name__ == "__main__":
     args = parse_args()
     profile = TrainProfile[args.profile.upper()]
@@ -270,13 +434,31 @@ if __name__ == "__main__":
     raw_notch: Notch = Notch.N
     notch: Notch = Notch.N
     pressed_buttons = set[ZuikiMasconButton | DpadButton]()
+    fake_notch_web_queue: queue.Queue[Notch] | None = None
+    fake_notch_web_server: ThreadingHTTPServer | None = None
 
     pygame.init()
     pygame.display.set_allow_screensaver(True)
+    if args.fake_notch_web:
+        fake_notch_web_queue = queue.Queue()
+        fake_notch_web_server = start_fake_notch_web_server(
+            args.fake_notch_web_host,
+            args.fake_notch_web_port,
+            fake_notch_web_queue,
+            args.profile,
+            notch,
+            profile_limit,
+        )
 
     clock = pygame.time.Clock()
 
     while True:
+        if fake_notch_web_queue is not None:
+            while not fake_notch_web_queue.empty():
+                handle_fake_notch_input(fake_notch_web_queue.get())
+                if args.verbose:
+                    print_state()
+
         for event in pygame.event.get():
             match event.type:
                 case pygame.JOYDEVICEADDED:
@@ -290,11 +472,13 @@ if __name__ == "__main__":
                 case pygame.JOYHATMOTION:
                     handle_hat_motion(*event.dict["value"])
                 case pygame.QUIT:
+                    if fake_notch_web_server is not None:
+                        fake_notch_web_server.shutdown()
                     sys.exit()
                 case _:
                     pass
 
             if args.verbose:
-                print(notch.name, raw_notch.name, {button.name for button in pressed_buttons})
+                print_state()
 
         clock.tick(60)

@@ -1,0 +1,303 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, user-scalable=no"
+    />
+    <title>ZUIKI fake notch</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        background: #15191d;
+        color: #eef2f6;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        overscroll-behavior: none;
+        touch-action: none;
+      }
+      body {
+        display: grid;
+        grid-template-rows: auto auto 1fr;
+        gap: 16px;
+        padding: 16px;
+        box-sizing: border-box;
+      }
+      header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        font-size: 15px;
+      }
+      #slider {
+        position: relative;
+        display: grid;
+        grid-template-columns: 1fr 72px;
+        gap: 18px;
+        min-height: 520px;
+        touch-action: none;
+        user-select: none;
+      }
+      #track {
+        position: relative;
+        margin: 16px 0;
+        border: 1px solid #55616f;
+        background: #222a31;
+        border-radius: 10px;
+      }
+      #rail {
+        position: absolute;
+        top: 24px;
+        bottom: 24px;
+        left: 50%;
+        width: 4px;
+        margin-left: -2px;
+        border-radius: 999px;
+        background: #566473;
+      }
+      #trackHitArea {
+        position: absolute;
+        inset: 0;
+      }
+      #handle {
+        position: absolute;
+        left: 50%;
+        width: 88px;
+        height: 46px;
+        margin-left: -44px;
+        margin-top: -23px;
+        border-radius: 8px;
+        background: #eef2f6;
+        color: #15191d;
+        display: grid;
+        place-items: center;
+        font-size: 24px;
+        font-weight: 800;
+        box-shadow: 0 8px 28px rgba(0, 0, 0, 0.32);
+        touch-action: none;
+      }
+      #handle.eb {
+        background: #ff5263;
+        color: white;
+      }
+      #ticks {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        gap: 6px;
+        padding: 16px 0;
+      }
+      .tick {
+        border: 1px solid #55616f;
+        border-radius: 8px;
+        background: #222a31;
+        color: #eef2f6;
+        min-height: 42px;
+        font-size: 16px;
+        font-weight: 800;
+      }
+      .tick.active {
+        background: #eef2f6;
+        border-color: #eef2f6;
+        color: #15191d;
+      }
+      .tick[data-notch="EB"] {
+        border-color: #a9404d;
+        color: #ffabb4;
+      }
+      .tick[data-notch="EB"].active {
+        background: #ff5263;
+        border-color: #ff5263;
+        color: white;
+      }
+      #status {
+        display: none;
+        border: 1px solid #9b723d;
+        background: #2c2118;
+        color: #ffd59b;
+        border-radius: 8px;
+        padding: 10px 12px;
+        font-size: 14px;
+        line-height: 1.35;
+      }
+      #status.error {
+        display: block;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <strong>ZUIKI fake notch</strong>
+      <span>profile: __PROFILE_NAME__</span>
+    </header>
+    <div id="status"></div>
+    <main id="slider">
+      <div id="track">
+        <div id="rail"></div>
+        <div id="trackHitArea"></div>
+        <div id="handle"></div>
+      </div>
+      <div id="ticks">__NOTCH_LABELS__</div>
+    </main>
+    <script>
+      const notches = __NOTCH_NAMES_JSON__;
+      const track = document.getElementById("track");
+      const trackHitArea = document.getElementById("trackHitArea");
+      const handle = document.getElementById("handle");
+      const status = document.getElementById("status");
+      let currentNotch = "__CURRENT_NOTCH__";
+      let lastConfirmedNotch = currentNotch;
+      let activePointer = null;
+      const requestTimeoutMs = 1000;
+
+      async function postJson(path, payload) {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(
+          () => controller.abort(),
+          requestTimeoutMs,
+        );
+        try {
+          const response = await fetch(path, {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify(payload),
+            keepalive: true,
+            signal: controller.signal,
+          });
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+          }
+          return response;
+        } finally {
+          clearTimeout(timeoutId);
+        }
+      }
+
+      function showError(message) {
+        status.textContent = message;
+        status.classList.add("error");
+      }
+
+      function clearError() {
+        status.textContent = "";
+        status.classList.remove("error");
+      }
+
+      function haptic() {
+        if ("vibrate" in navigator) {
+          navigator.vibrate(20);
+        }
+      }
+
+      function notchIndex(notch) {
+        return Math.max(0, notches.indexOf(notch));
+      }
+
+      function sliderBounds() {
+        const rect = track.getBoundingClientRect();
+        const halfHandle = handle.offsetHeight / 2;
+        return {
+          rect,
+          top: halfHandle,
+          bottom: Math.max(halfHandle, rect.height - halfHandle),
+        };
+      }
+
+      function yForIndex(index) {
+        const bounds = sliderBounds();
+        if (notches.length === 1) {
+          return bounds.rect.height / 2;
+        }
+        return (
+          bounds.top +
+          (index / (notches.length - 1)) * (bounds.bottom - bounds.top)
+        );
+      }
+
+      function notchFromPointer(event) {
+        const bounds = sliderBounds();
+        const rawY = event.clientY - bounds.rect.top;
+        const y = Math.max(bounds.top, Math.min(bounds.bottom, rawY));
+        const ratio =
+          bounds.bottom === bounds.top
+            ? 0
+            : (y - bounds.top) / (bounds.bottom - bounds.top);
+        const index = Math.round(ratio * (notches.length - 1));
+        return notches[index];
+      }
+
+      function render(notch) {
+        const index = notchIndex(notch);
+        const y = yForIndex(index);
+
+        handle.style.top = `${y}px`;
+        handle.textContent = notch;
+        handle.classList.toggle("eb", notch === "EB");
+
+        for (const tick of document.querySelectorAll(".tick")) {
+          tick.classList.toggle("active", tick.dataset.notch === notch);
+        }
+      }
+
+      async function sendNotch(notch) {
+        if (notch === currentNotch) return;
+        currentNotch = notch;
+        render(notch);
+        haptic();
+        try {
+          await postJson("/notch", { notch });
+          lastConfirmedNotch = notch;
+          clearError();
+        } catch (error) {
+          showError(
+            `送信失敗: ${notch} を送れませんでした。Wi-Fi接続を確認してください。`,
+          );
+          currentNotch = lastConfirmedNotch;
+          render(currentNotch);
+        }
+      }
+
+      function handlePointerDown(event) {
+        event.preventDefault();
+        activePointer = event.pointerId;
+        event.currentTarget.setPointerCapture(event.pointerId);
+        sendNotch(notchFromPointer(event));
+      }
+
+      function handlePointerMove(event) {
+        if (activePointer !== event.pointerId) return;
+        sendNotch(notchFromPointer(event));
+      }
+
+      function handlePointerUp(event) {
+        if (activePointer !== event.pointerId) return;
+        sendNotch(notchFromPointer(event));
+        activePointer = null;
+      }
+
+      function handlePointerCancel() {
+        activePointer = null;
+      }
+
+      for (const target of [trackHitArea, handle]) {
+        target.addEventListener("pointerdown", handlePointerDown);
+        target.addEventListener("pointermove", handlePointerMove);
+        target.addEventListener("pointerup", handlePointerUp);
+        target.addEventListener("pointercancel", handlePointerCancel);
+      }
+
+      for (const tick of document.querySelectorAll(".tick")) {
+        tick.addEventListener("pointerdown", (event) => {
+          event.preventDefault();
+          sendNotch(tick.dataset.notch);
+        });
+      }
+
+      render(currentNotch);
+      window.addEventListener("resize", () => render(currentNotch));
+    </script>
+  </body>
+</html>
