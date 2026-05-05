@@ -9,7 +9,7 @@ pygame==2.6.1
 PyGetWindow==0.0.9
 Pygments==2.20.0
 pyinstaller==6.20.0
-pyinstaller-hooks-contrib==2026.4
+pyinstaller-hooks-contrib==2026.5
 PyMsgBox==2.0.1
 pyobjc-core==12.1
 pyobjc-framework-Cocoa==12.1
