@@ -1,19 +1,32 @@
 {
   "cSpell.words": [
+    "activebackground",
+    "basedpyright",
+    "highlightbackground",
+    "highlightthickness",
     "JOYAXISMOTION",
     "JOYBUTTONDOWN",
     "JOYBUTTONUP",
     "JOYDEVICEADDED",
+    "JOYDEVICEREMOVED",
     "JOYHATMOTION",
     "JRETS",
     "noconsole",
+    "objc",
     "onefile",
+    "padx",
+    "pady",
     "pyautogui",
+    "pygame",
     "pyinstaller",
+    "pyobjc",
     "pytest",
     "SEIBU",
     "softprops",
+    "tearoff",
     "TOBU",
+    "venv",
+    "ZKNS",
     "ZUIKI"
   ]
 }
