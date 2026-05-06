@@ -1,4 +1,5 @@
 import sys
+from argparse import Namespace
 from unittest.mock import Mock, call
 
 import pytest
@@ -7,10 +8,14 @@ from pytest_mock import MockerFixture
 mock = Mock()
 sys.modules["pyautogui"] = mock
 
-from main import (
+import main  # noqa: E402
+from mascon_controller import (  # noqa: E402
+    DpadButton,
+    MasconController,
     Notch,
     PROFILE_LIMITS,
     TrainProfile,
+    ZuikiMasconButton,
     get_notch,
     project_notch,
     update_notch,
@@ -58,7 +63,7 @@ def test_get_notch() -> None:
 def test_update_notch(
     mocker: MockerFixture, current: Notch, next_notch: Notch, calls: list[object]
 ) -> None:
-    press_mock = mocker.patch("main.press")
+    press_mock = mocker.patch("mascon_controller.press")
     update_notch(current, next_notch, Notch.B8)
     assert press_mock.call_args_list == calls
 
@@ -70,7 +75,7 @@ def test_update_notch(
 def test_update_notch_does_nothing_when_notch_is_unchanged(
     mocker: MockerFixture, notch: Notch
 ) -> None:
-    press_mock = mocker.patch("main.press")
+    press_mock = mocker.patch("mascon_controller.press")
     update_notch(notch, notch, Notch.B8)
     press_mock.assert_not_called()
 
@@ -115,7 +120,7 @@ def test_update_notch_from_emergency_brake_uses_profile_brake_order(
     next_notch: Notch,
     calls: list[object],
 ) -> None:
-    press_mock = mocker.patch("main.press")
+    press_mock = mocker.patch("mascon_controller.press")
     update_notch(current, next_notch, PROFILE_LIMITS[profile].max_brake)
     assert press_mock.call_args_list == calls
 
@@ -155,3 +160,119 @@ def test_project_notch_applies_profile_limits(
 @pytest.mark.parametrize("profile", list(TrainProfile))
 def test_project_notch_keeps_emergency_brake(profile: TrainProfile) -> None:
     assert project_notch(Notch.EB, PROFILE_LIMITS[profile]) == Notch.EB
+
+
+def test_controller_axis_motion_updates_raw_and_effective_notches(
+    mocker: MockerFixture,
+) -> None:
+    press_mock = mocker.patch("mascon_controller.press")
+    controller = MasconController(profile=TrainProfile.TOBU)
+
+    controller.handle_axis_motion(1.0)
+
+    assert controller.raw_notch == Notch.P5
+    assert controller.notch == Notch.P3
+    assert press_mock.call_args_list == [call("z", 3)]
+
+
+def test_controller_zl_button_down_enters_emergency_brake(
+    mocker: MockerFixture,
+) -> None:
+    press_mock = mocker.patch("mascon_controller.press")
+    controller = MasconController(raw_notch=Notch.B8, notch=Notch.B8)
+
+    controller.handle_button_down(ZuikiMasconButton.ZL)
+
+    assert controller.raw_notch == Notch.EB
+    assert controller.notch == Notch.EB
+    assert ZuikiMasconButton.ZL in controller.pressed_buttons
+    assert press_mock.call_args_list == [call("/")]
+
+
+def test_controller_zl_button_up_releases_emergency_brake(
+    mocker: MockerFixture,
+) -> None:
+    press_mock = mocker.patch("mascon_controller.press")
+    controller = MasconController(
+        raw_notch=Notch.EB,
+        notch=Notch.EB,
+        pressed_buttons={ZuikiMasconButton.ZL},
+    )
+
+    controller.handle_button_up(ZuikiMasconButton.ZL)
+
+    assert controller.raw_notch == Notch.B8
+    assert controller.notch == Notch.B8
+    assert ZuikiMasconButton.ZL not in controller.pressed_buttons
+    assert press_mock.call_args_list == [call(",", 1)]
+
+
+def test_controller_change_profile_succeeds_at_neutral() -> None:
+    controller = MasconController()
+
+    assert controller.change_profile(TrainProfile.TOBU)
+    assert controller.profile == TrainProfile.TOBU
+    assert controller.profile_limit == PROFILE_LIMITS[TrainProfile.TOBU]
+
+
+def test_controller_change_profile_fails_outside_neutral() -> None:
+    controller = MasconController(raw_notch=Notch.P1, notch=Notch.P1)
+
+    assert not controller.change_profile(TrainProfile.TOBU)
+    assert controller.profile == TrainProfile.DEFAULT
+
+
+def test_controller_register_joystick_keeps_joystick_instance(
+    mocker: MockerFixture,
+) -> None:
+    joystick = Mock()
+    joystick.get_instance_id.return_value = 42
+    mocker.patch("mascon_controller.pygame.joystick.Joystick", return_value=joystick)
+    controller = MasconController()
+
+    controller.register_joystick(0)
+
+    assert controller.joysticks == {42: joystick}
+
+
+def test_controller_initialize_joysticks_registers_connected_devices(
+    mocker: MockerFixture,
+) -> None:
+    controller = MasconController()
+    register_mock = mocker.patch.object(controller, "register_joystick")
+    mocker.patch("mascon_controller.pygame.joystick.get_count", return_value=2)
+
+    controller.initialize_joysticks()
+
+    assert register_mock.call_args_list == [call(0), call(1)]
+
+
+def test_controller_release_all_inputs_releases_pressed_buttons(
+    mocker: MockerFixture,
+) -> None:
+    handle_button_up_mock = mocker.patch.object(MasconController, "handle_button_up")
+    key_up_mock = mocker.patch("mascon_controller.key_up")
+    controller = MasconController(
+        pressed_buttons={ZuikiMasconButton.A, DpadButton.UP}
+    )
+
+    controller.release_all_inputs()
+
+    handle_button_up_mock.assert_called_once_with(ZuikiMasconButton.A)
+    key_up_mock.assert_called_once_with(DpadButton.UP)
+    assert controller.pressed_buttons == set()
+
+
+def test_handle_pygame_events_uses_controller(
+    mocker: MockerFixture,
+) -> None:
+    event = Mock()
+    event.type = main.pygame.JOYAXISMOTION
+    event.dict = {"value": 1.0}
+    mocker.patch("main.pygame.event.get", return_value=[event])
+    controller = MasconController()
+    handle_axis_motion_mock = mocker.patch.object(controller, "handle_axis_motion")
+
+    main.handle_pygame_events(controller, Namespace(verbose=False))
+
+    handle_axis_motion_mock.assert_called_once_with(1.0)

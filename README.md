@@ -47,12 +47,12 @@ Windows / Linuxでは動作を確認していません。
    ```
 3. main.py を実行する
    ```
-   uv run python main.py
+   uv run python main.py --no-gui
    ```
    東武・西武の車両を運転する場合は、車両に合わせて `--profile` を指定する
    ```
-   uv run python main.py --profile tobu
-   uv run python main.py --profile seibu
+   uv run python main.py --no-gui --profile tobu
+   uv run python main.py --no-gui --profile seibu
    ```
    `--profile` を指定しない場合は `default` として動作する
 
