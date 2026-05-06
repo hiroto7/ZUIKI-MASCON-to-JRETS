@@ -7,7 +7,14 @@ from pytest_mock import MockerFixture
 mock = Mock()
 sys.modules["pyautogui"] = mock
 
-from main import Notch, get_notch, update_notch
+from main import (
+    Notch,
+    PROFILE_LIMITS,
+    TrainProfile,
+    get_notch,
+    project_notch,
+    update_notch,
+)
 
 
 def test_get_notch() -> None:
@@ -29,7 +36,7 @@ def test_get_notch() -> None:
 
 
 @pytest.mark.parametrize(
-    ("current", "next", "calls"),
+    ("current", "next_notch", "calls"),
     [
         pytest.param(Notch.P2, Notch.P5, [call("z", 3)], id="P2 -> P5"),
         pytest.param(Notch.P2, Notch.P1, [call("a", 1)], id="P2 -> P1"),
@@ -46,12 +53,105 @@ def test_get_notch() -> None:
         pytest.param(Notch.B5, Notch.EB, [call("/")], id="B5 -> EB"),
         pytest.param(Notch.EB, Notch.P2, [call("m"), call("z", 2)], id="EB -> P2"),
         pytest.param(Notch.EB, Notch.N, [call("m")], id="EB -> N"),
-        pytest.param(Notch.EB, Notch.B5, [call(",", 4)], id="EB -> B5"),
     ],
 )
 def test_update_notch(
-    mocker: MockerFixture, current: Notch, next: Notch, calls: list[object]
+    mocker: MockerFixture, current: Notch, next_notch: Notch, calls: list[object]
 ) -> None:
     press_mock = mocker.patch("main.press")
-    update_notch(current, next)
+    update_notch(current, next_notch, Notch.B8)
     assert press_mock.call_args_list == calls
+
+
+@pytest.mark.parametrize(
+    "notch",
+    [Notch.P2, Notch.N, Notch.B5, Notch.EB],
+)
+def test_update_notch_does_nothing_when_notch_is_unchanged(
+    mocker: MockerFixture, notch: Notch
+) -> None:
+    press_mock = mocker.patch("main.press")
+    update_notch(notch, notch, Notch.B8)
+    press_mock.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    ("profile", "current", "next_notch", "calls"),
+    [
+        pytest.param(
+            TrainProfile.DEFAULT,
+            Notch.EB,
+            Notch.B8,
+            [call(",", 1)],
+            id="default EB -> B8",
+        ),
+        pytest.param(
+            TrainProfile.DEFAULT,
+            Notch.EB,
+            Notch.B5,
+            [call(",", 4)],
+            id="default EB -> B5",
+        ),
+        pytest.param(
+            TrainProfile.TOBU,
+            Notch.EB,
+            Notch.B7,
+            [call(",", 1)],
+            id="tobu EB -> B7",
+        ),
+        pytest.param(
+            TrainProfile.TOBU,
+            Notch.EB,
+            Notch.B5,
+            [call(",", 3)],
+            id="tobu EB -> B5",
+        ),
+    ],
+)
+def test_update_notch_from_emergency_brake_uses_profile_brake_order(
+    mocker: MockerFixture,
+    profile: TrainProfile,
+    current: Notch,
+    next_notch: Notch,
+    calls: list[object],
+) -> None:
+    press_mock = mocker.patch("main.press")
+    update_notch(current, next_notch, PROFILE_LIMITS[profile].max_brake)
+    assert press_mock.call_args_list == calls
+
+
+@pytest.mark.parametrize(
+    ("profile", "raw_notch", "expected"),
+    [
+        pytest.param(
+            TrainProfile.DEFAULT,
+            Notch.P5,
+            Notch.P5,
+            id="default P5 -> P5",
+        ),
+        pytest.param(
+            TrainProfile.DEFAULT,
+            Notch.B8,
+            Notch.B8,
+            id="default B8 -> B8",
+        ),
+        pytest.param(TrainProfile.TOBU, Notch.P5, Notch.P3, id="tobu P5 -> P3"),
+        pytest.param(TrainProfile.TOBU, Notch.P4, Notch.P3, id="tobu P4 -> P3"),
+        pytest.param(TrainProfile.TOBU, Notch.P3, Notch.P3, id="tobu P3 -> P3"),
+        pytest.param(TrainProfile.TOBU, Notch.B8, Notch.B7, id="tobu B8 -> B7"),
+        pytest.param(TrainProfile.TOBU, Notch.B7, Notch.B7, id="tobu B7 -> B7"),
+        pytest.param(TrainProfile.SEIBU, Notch.P5, Notch.P4, id="seibu P5 -> P4"),
+        pytest.param(TrainProfile.SEIBU, Notch.P4, Notch.P4, id="seibu P4 -> P4"),
+        pytest.param(TrainProfile.SEIBU, Notch.B8, Notch.B7, id="seibu B8 -> B7"),
+        pytest.param(TrainProfile.SEIBU, Notch.B7, Notch.B7, id="seibu B7 -> B7"),
+    ],
+)
+def test_project_notch_applies_profile_limits(
+    profile: TrainProfile, raw_notch: Notch, expected: Notch
+) -> None:
+    assert project_notch(raw_notch, PROFILE_LIMITS[profile]) == expected
+
+
+@pytest.mark.parametrize("profile", list(TrainProfile))
+def test_project_notch_keeps_emergency_brake(profile: TrainProfile) -> None:
+    assert project_notch(Notch.EB, PROFILE_LIMITS[profile]) == Notch.EB
