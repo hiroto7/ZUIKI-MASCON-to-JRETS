@@ -27,7 +27,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install uv
-          uv sync --frozen --all-groups
+          uv sync --frozen --dev
       - name: Lint with flake8
         run: |
           # stop the build if there are Python syntax errors or undefined names
@@ -37,6 +37,9 @@ jobs:
       - name: Format check with black
         run: |
           uv run black --check .
+      - name: Type check with basedpyright
+        run: |
+          uv run basedpyright
       - name: Test with pytest
         run: |
           uv run pytest
