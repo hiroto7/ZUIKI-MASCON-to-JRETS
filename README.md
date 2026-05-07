@@ -35,6 +35,10 @@ Windows / Linuxでは動作を確認していません。
 5. 運転を開始する
 6. 終了方法：Dockの ZUIKI-MASCON-to-JRETS のアイコンを右クリックして「終了」を選択する
 
+起動すると、現在のノッチや選択中の車種を確認できるウィンドウが表示されます。
+
+![ZUIKI MASCON to JRETSのステータス画面](docs/images/status-window.png)
+
 ### コマンドラインから実行する場合
 
 1. uvをインストールする
