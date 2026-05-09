@@ -1,104 +1,23 @@
 import argparse
 import sys
-from dataclasses import dataclass
-from enum import Enum, IntEnum, auto
+from collections.abc import Callable
+from typing import Protocol
 
 import pygame
-import pyautogui
-from pyautogui import press
+
+from mascon_controller import (
+    INPUT_POLL_HZ,
+    PYGAME_POLL_INTERVAL_MS,
+    MasconController,
+    TrainProfile,
+    ZuikiMasconButton,
+)
 
 
-class TrainProfile(Enum):
-    DEFAULT = auto()
-    TOBU = auto()
-    SEIBU = auto()
+class TkRoot(Protocol):
+    def after(self, ms: int, func: Callable[[], None]) -> object: ...
 
-
-class ZuikiMasconButton(IntEnum):
-    A = 2
-    B = 1
-    X = 3
-    Y = 0
-    L = 4
-    R = 5
-    ZL = 6
-    ZR = 7
-    MINUS = 8
-    PLUS = 9
-    HOME = 12
-    CAPTURE = 13
-
-
-class DpadButton(Enum):
-    UP = auto()
-    DOWN = auto()
-    LEFT = auto()
-    RIGHT = auto()
-
-
-class Notch(IntEnum):
-    P5 = 5
-    P4 = 4
-    P3 = 3
-    P2 = 2
-    P1 = 1
-    N = 0
-    B1 = -1
-    B2 = -2
-    B3 = -3
-    B4 = -4
-    B5 = -5
-    B6 = -6
-    B7 = -7
-    B8 = -8
-    EB = -9
-
-
-@dataclass(frozen=True)
-class ProfileLimit:
-    max_power: Notch
-    max_brake: Notch
-
-
-PROFILE_LIMITS: dict[TrainProfile, ProfileLimit] = {
-    TrainProfile.DEFAULT: ProfileLimit(max_power=Notch.P5, max_brake=Notch.B8),
-    TrainProfile.TOBU: ProfileLimit(max_power=Notch.P3, max_brake=Notch.B7),
-    TrainProfile.SEIBU: ProfileLimit(max_power=Notch.P4, max_brake=Notch.B7),
-}
-
-
-MAPPING_TO_KEYBOARD: dict[ZuikiMasconButton | DpadButton, str | tuple[str, ...]] = {
-    # 警笛（2段目）
-    ZuikiMasconButton.A: "backspace",
-    # 警笛（1段目）
-    ZuikiMasconButton.B: "enter",
-    # EBリセットボタン
-    ZuikiMasconButton.X: "e",
-    # ATS確認ボタン
-    ZuikiMasconButton.Y: "space",
-    # 警報持続ボタン
-    ZuikiMasconButton.L: "x",
-    # 抑速1
-    ZuikiMasconButton.R: "d",
-    # 定速/抑速2
-    ZuikiMasconButton.ZR: "w",
-    # 運転台表示切替
-    ZuikiMasconButton.MINUS: "c",
-    # ポーズ
-    ZuikiMasconButton.PLUS: "esc",
-    # [GeForce NOW] ゲーム内オーバーレイを開く / 閉じる
-    ZuikiMasconButton.HOME: ("command", "g"),
-    # [GeForce NOW] スクリーンショットを保存する
-    ZuikiMasconButton.CAPTURE: ("command", "1"),
-    # レバーサ 前位置方向
-    DpadButton.UP: "up",
-    # レバーサ 後位置方向
-    DpadButton.DOWN: "down",
-    # 連絡ブザースイッチ
-    DpadButton.LEFT: "b",
-    # 勾配起動ボタン
-    DpadButton.RIGHT: "g",
-}
+    def mainloop(self) -> None: ...
 
 
 def parse_args() -> argparse.Namespace:
@@ -109,196 +28,87 @@ def parse_args() -> argparse.Namespace:
         default="default",
         help="Train profile for notch limits. default preserves the previous behavior.",
     )
+    parser.add_argument(
+        "--no-gui",
+        action="store_true",
+        help="Run without the tkinter status window.",
+    )
     parser.add_argument("-v", "--verbose", action="store_true")
     return parser.parse_args()
 
 
-def map_to_keys(button: ZuikiMasconButton | DpadButton) -> tuple[str, ...]:
-    match MAPPING_TO_KEYBOARD[button]:
-        case tuple() as keys:
-            return keys
-        case key:
-            return (key,)
+def handle_pygame_events(
+    controller: MasconController, args: argparse.Namespace
+) -> None:
+    for event in pygame.event.get():
+        match event.type:
+            case pygame.JOYDEVICEADDED:
+                controller.register_joystick(event.dict["device_index"])
+            case pygame.JOYDEVICEREMOVED:
+                controller.unregister_joystick(event.dict["instance_id"])
+            case pygame.JOYAXISMOTION:
+                controller.handle_axis_motion(event.dict["value"])
+            case pygame.JOYBUTTONDOWN:
+                controller.handle_button_down(ZuikiMasconButton(event.dict["button"]))
+            case pygame.JOYBUTTONUP:
+                controller.handle_button_up(ZuikiMasconButton(event.dict["button"]))
+            case pygame.JOYHATMOTION:
+                controller.handle_hat_motion(*event.dict["value"])
+            case pygame.QUIT:
+                controller.release_all_inputs()
+                sys.exit()
+            case _:
+                pass
+
+        if args.verbose:
+            controller.print_state()
 
 
-def key_down(button: ZuikiMasconButton | DpadButton) -> None:
-    for key in map_to_keys(button):
-        pyautogui.keyDown(key)
+def poll_pygame_events(
+    root: TkRoot, controller: MasconController, args: argparse.Namespace
+) -> None:
+    handle_pygame_events(controller, args)
+    root.after(
+        PYGAME_POLL_INTERVAL_MS,
+        lambda: poll_pygame_events(root, controller, args),
+    )
 
 
-def key_up(button: ZuikiMasconButton | DpadButton) -> None:
-    for key in map_to_keys(button):
-        pyautogui.keyUp(key)
-
-        # 矢印キーを押すとfnキーが押されたような状態になる問題への回避策
-        # https://github.com/asweigart/pyautogui/issues/796#issuecomment-1937049349
-        if key in ("up", "down", "left", "right"):
-            pyautogui.keyUp("fn")
-
-
-def get_notch(value: float, is_zl_button_pressed: bool) -> Notch:
-    if value > 0.9:
-        return Notch.P5
-    elif value > 0.7:
-        return Notch.P4
-    elif value > 0.55:
-        return Notch.P3
-    elif value > 0.35:
-        return Notch.P2
-    elif value > 0.15:
-        return Notch.P1
-    elif value > -0.1:
-        return Notch.N
-    elif value > -0.25:
-        return Notch.B1
-    elif value > -0.35:
-        return Notch.B2
-    elif value > -0.5:
-        return Notch.B3
-    elif value > -0.6:
-        return Notch.B4
-    elif value > -0.7:
-        return Notch.B5
-    elif value > -0.8:
-        return Notch.B6
-    elif value > -0.9:
-        return Notch.B7
-    elif is_zl_button_pressed:
-        return Notch.EB
-    else:
-        return Notch.B8
-
-
-def project_notch(raw_notch: Notch, profile_limit: ProfileLimit) -> Notch:
-    if raw_notch >= Notch.P1:
-        return min(raw_notch, profile_limit.max_power)
-    elif Notch.EB < raw_notch <= Notch.B1:
-        return max(raw_notch, profile_limit.max_brake)
-    else:
-        return raw_notch
-
-
-def update_notch(current: Notch, next_notch: Notch, max_brake: Notch) -> None:
-    if current == next_notch:
-        return
-    elif Notch.N <= current < next_notch:
-        press("z", next_notch - current)
-    elif current <= Notch.N and next_notch == Notch.EB:
-        press("/")
-    elif next_notch < current <= Notch.N:
-        press(".", current - next_notch)
-    elif current >= Notch.P1:
-        if next_notch >= Notch.P1:
-            press("a", current - next_notch)
-        else:
-            press("s")
-            return update_notch(Notch.N, next_notch, max_brake)
-    elif current <= Notch.B1:
-        if next_notch <= Notch.B1:
-            if current == Notch.EB:
-                presses = next_notch - max_brake + 1
-            else:
-                presses = next_notch - current
-            press(",", presses)
-        else:
-            press("m")
-            return update_notch(Notch.N, next_notch, max_brake)
-
-
-def handle_axis_motion(value: float) -> None:
-    global raw_notch
-    global notch
-
-    next_raw_notch = get_notch(value, ZuikiMasconButton.ZL in pressed_buttons)
-    next_notch = project_notch(next_raw_notch, profile_limit)
-
-    update_notch(notch, next_notch, profile_limit.max_brake)
-
-    raw_notch = next_raw_notch
-    notch = next_notch
-
-
-def handle_button_down(button: ZuikiMasconButton) -> None:
-    global raw_notch
-    global notch
-
-    pressed_buttons.add(button)
-    if button == ZuikiMasconButton.ZL:
-        if raw_notch == Notch.B8:
-            update_notch(notch, Notch.EB, profile_limit.max_brake)
-            raw_notch = Notch.EB
-            notch = Notch.EB
-    else:
-        key_down(button)
-
-
-def handle_button_up(button: ZuikiMasconButton) -> None:
-    global raw_notch
-    global notch
-
-    pressed_buttons.remove(button)
-    if button == ZuikiMasconButton.ZL:
-        if notch == Notch.EB:
-            raw_notch = Notch.B8
-            next_notch = project_notch(raw_notch, profile_limit)
-            update_notch(notch, next_notch, profile_limit.max_brake)
-            notch = next_notch
-    else:
-        key_up(button)
-
-
-def handle_hat_motion(x: int, y: int) -> None:
-    for is_pressed, direction in (
-        (y == 1, DpadButton.UP),
-        (y == -1, DpadButton.DOWN),
-        (x == -1, DpadButton.LEFT),
-        (x == 1, DpadButton.RIGHT),
-    ):
-        if is_pressed and direction not in pressed_buttons:
-            key_down(direction)
-            pressed_buttons.add(direction)
-        if not is_pressed and direction in pressed_buttons:
-            key_up(direction)
-            pressed_buttons.remove(direction)
-
-
-if __name__ == "__main__":
-    args = parse_args()
-    profile = TrainProfile[args.profile.upper()]
-    profile_limit = PROFILE_LIMITS[profile]
-
-    raw_notch: Notch = Notch.N
-    notch: Notch = Notch.N
-    pressed_buttons = set[ZuikiMasconButton | DpadButton]()
-
+def initialize_pygame(controller: MasconController) -> None:
     pygame.init()
     pygame.display.set_allow_screensaver(True)
+    controller.initialize_joysticks()
+
+
+def run_no_gui(controller: MasconController, args: argparse.Namespace) -> None:
+    initialize_pygame(controller)
 
     clock = pygame.time.Clock()
 
     while True:
-        for event in pygame.event.get():
-            match event.type:
-                case pygame.JOYDEVICEADDED:
-                    joystick = pygame.joystick.Joystick(0)
-                case pygame.JOYAXISMOTION:
-                    handle_axis_motion(event.dict["value"])
-                case pygame.JOYBUTTONDOWN:
-                    handle_button_down(ZuikiMasconButton(event.dict["button"]))
-                case pygame.JOYBUTTONUP:
-                    handle_button_up(ZuikiMasconButton(event.dict["button"]))
-                case pygame.JOYHATMOTION:
-                    handle_hat_motion(*event.dict["value"])
-                case pygame.QUIT:
-                    sys.exit()
-                case _:
-                    pass
+        handle_pygame_events(controller, args)
+        clock.tick(INPUT_POLL_HZ)
 
-            if args.verbose:
-                print(
-                    notch.name,
-                    raw_notch.name,
-                    {button.name for button in pressed_buttons},
-                )
 
-        clock.tick(60)
+def run_gui(controller: MasconController, args: argparse.Namespace) -> None:
+    import tkinter as tk
+
+    from status_window import StatusWindow
+
+    root = tk.Tk()
+    StatusWindow(root, controller)
+
+    initialize_pygame(controller)
+
+    poll_pygame_events(root, controller, args)
+    root.mainloop()
+
+
+if __name__ == "__main__":
+    args = parse_args()
+    controller = MasconController(profile=TrainProfile[args.profile.upper()])
+
+    if args.no_gui:
+        run_no_gui(controller, args)
+    else:
+        run_gui(controller, args)
