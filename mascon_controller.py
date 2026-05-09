@@ -268,12 +268,8 @@ class MasconController:
                 key_up(direction)
                 self.pressed_buttons.remove(direction)
 
-    def change_profile(self, profile: TrainProfile) -> bool:
-        if self.raw_notch != Notch.N or self.notch != Notch.N:
-            return False
-
+    def change_profile(self, profile: TrainProfile) -> None:
         self.profile = profile
-        return True
 
     def register_joystick(self, device_index: int) -> None:
         joystick = pygame.joystick.Joystick(device_index)

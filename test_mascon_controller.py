@@ -204,19 +204,17 @@ def test_controller_zl_button_up_releases_emergency_brake(
     assert press_mock.call_args_list == [call(",", 1)]
 
 
-def test_controller_change_profile_succeeds_at_neutral() -> None:
-    controller = MasconController()
+def test_controller_change_profile_updates_profile_and_effective_notch() -> None:
+    controller = MasconController(raw_notch=Notch.P5)
 
-    assert controller.change_profile(TrainProfile.TOBU)
+    assert controller.notch == Notch.P5
+
+    controller.change_profile(TrainProfile.TOBU)
+
     assert controller.profile == TrainProfile.TOBU
     assert controller.profile_limit == PROFILE_LIMITS[TrainProfile.TOBU]
-
-
-def test_controller_change_profile_fails_outside_neutral() -> None:
-    controller = MasconController(raw_notch=Notch.P1)
-
-    assert not controller.change_profile(TrainProfile.TOBU)
-    assert controller.profile == TrainProfile.DEFAULT
+    assert controller.raw_notch == Notch.P5
+    assert controller.notch == Notch.P3
 
 
 def test_controller_register_joystick_keeps_joystick_instance(

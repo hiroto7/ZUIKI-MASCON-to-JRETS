@@ -98,15 +98,6 @@ class StatusWindow:
         )
         self.profile_limit_label.pack(side="left", padx=(10, 0))
 
-        self.profile_message_label = tk.Label(
-            self.info_frame,
-            anchor="w",
-            font=("Helvetica", 11),
-            bg="#f6f8fa",
-            fg="#8a6700",
-        )
-        self.profile_message_label.pack(fill="x", pady=2)
-
         self.raw_label = self.create_info_label()
         self.controller_label = self.create_info_label()
 
@@ -224,13 +215,7 @@ class StatusWindow:
             self.notch_labels[item] = label
 
     def change_profile(self, profile: TrainProfile) -> None:
-        if not self.controller.change_profile(profile):
-            self.profile_message_label.config(text="車種変更はN位置でのみ可能です")
-            self.root.after(1800, lambda: self.profile_message_label.config(text=""))
-            self.render_status()
-            return
-
-        self.profile_message_label.config(text="")
+        self.controller.change_profile(profile)
         self.rebuild_notch_bar()
         self.render_status()
 
