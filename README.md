@@ -29,13 +29,12 @@ Windows / Linuxでは動作を確認していません。
 1. [最新のRelease](https://github.com/hiroto7/ZUIKI-MASCON-to-JRETS/releases/latest)で ZUIKI-MASCON-to-JRETS.app.zip をダウンロードする
 2. ダウンロードしたファイルを展開し、 ZUIKI-MASCON-to-JRETS.app を起動する
    - 「Appleは、“ZUIKI-MASCON-to-JRETS”にMacに損害を与えたり、プライバシーを侵害する可能性のあるマルウェアが含まれていないことを検証できませんでした」と警告され起動できない場合、 https://support.apple.com/ja-jp/guide/mac-help/mh40616/mac の手順に従って開く
-3. Dockに ZUIKI-MASCON-to-JRETS のアイコンが表示されたら、JRETSの運転画面に進む
+3. ステータスウィンドウが表示されたことを確認し、JRETSの運転画面に進む
+   - 東武・西武の車両を運転する場合は、ステータスウィンドウで「東武」または「西武」を選択する
 4. 一度マスコンをNまたはEBに合わせる
    - 「アクセシビリティ機能を使用してこのコンピュータを制御することを求めています」と表示された場合は、アクセスを許可する
 5. 運転を開始する
-6. 終了方法：Dockの ZUIKI-MASCON-to-JRETS のアイコンを右クリックして「終了」を選択する
-
-起動すると、現在のノッチや選択中の車種を確認できるウィンドウが表示されます。
+6. 終了方法：ステータスウィンドウを閉じる
 
 ![ZUIKI MASCON to JRETSのステータス画面](docs/images/status-window.png)
 
