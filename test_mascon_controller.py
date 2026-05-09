@@ -177,7 +177,7 @@ def test_controller_zl_button_down_enters_emergency_brake(
     mocker: MockerFixture,
 ) -> None:
     press_mock = mocker.patch("mascon_controller.press")
-    controller = MasconController(raw_notch=Notch.B8, notch=Notch.B8)
+    controller = MasconController(raw_notch=Notch.B8)
 
     controller.handle_button_down(ZuikiMasconButton.ZL)
 
@@ -193,7 +193,6 @@ def test_controller_zl_button_up_releases_emergency_brake(
     press_mock = mocker.patch("mascon_controller.press")
     controller = MasconController(
         raw_notch=Notch.EB,
-        notch=Notch.EB,
         pressed_buttons={ZuikiMasconButton.ZL},
     )
 
@@ -214,7 +213,7 @@ def test_controller_change_profile_succeeds_at_neutral() -> None:
 
 
 def test_controller_change_profile_fails_outside_neutral() -> None:
-    controller = MasconController(raw_notch=Notch.P1, notch=Notch.P1)
+    controller = MasconController(raw_notch=Notch.P1)
 
     assert not controller.change_profile(TrainProfile.TOBU)
     assert controller.profile == TrainProfile.DEFAULT

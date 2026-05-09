@@ -214,7 +214,6 @@ def effective_notch_order(profile_limit: ProfileLimit) -> tuple[Notch, ...]:
 class MasconController:
     profile: TrainProfile = TrainProfile.DEFAULT
     raw_notch: Notch = Notch.N
-    notch: Notch = Notch.N
     pressed_buttons: set[ZuikiMasconButton | DpadButton] = field(default_factory=set)
     joysticks: dict[int, pygame.joystick.JoystickType] = field(default_factory=dict)
 
@@ -222,14 +221,18 @@ class MasconController:
     def profile_limit(self) -> ProfileLimit:
         return PROFILE_LIMITS[self.profile]
 
+    @property
+    def notch(self) -> Notch:
+        return project_notch(self.raw_notch, self.profile_limit)
+
     def handle_axis_motion(self, value: float) -> None:
+        current_notch = self.notch
         next_raw_notch = get_notch(value, ZuikiMasconButton.ZL in self.pressed_buttons)
         next_notch = project_notch(next_raw_notch, self.profile_limit)
 
-        update_notch(self.notch, next_notch, self.profile_limit.max_brake)
+        update_notch(current_notch, next_notch, self.profile_limit.max_brake)
 
         self.raw_notch = next_raw_notch
-        self.notch = next_notch
 
     def handle_button_down(self, button: ZuikiMasconButton) -> None:
         self.pressed_buttons.add(button)
@@ -237,7 +240,6 @@ class MasconController:
             if self.raw_notch == Notch.B8:
                 update_notch(self.notch, Notch.EB, self.profile_limit.max_brake)
                 self.raw_notch = Notch.EB
-                self.notch = Notch.EB
         else:
             key_down(button)
 
@@ -245,10 +247,10 @@ class MasconController:
         self.pressed_buttons.remove(button)
         if button == ZuikiMasconButton.ZL:
             if self.notch == Notch.EB:
+                current_notch = self.notch
                 self.raw_notch = Notch.B8
                 next_notch = project_notch(self.raw_notch, self.profile_limit)
-                update_notch(self.notch, next_notch, self.profile_limit.max_brake)
-                self.notch = next_notch
+                update_notch(current_notch, next_notch, self.profile_limit.max_brake)
         else:
             key_up(button)
 
