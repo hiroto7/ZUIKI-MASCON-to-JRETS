@@ -17,6 +17,7 @@ build = [
     "pyinstaller-hooks-contrib==2026.4",
 ]
 lint = [
+    "black==26.3.0",
     "flake8==7.3.0",
 ]
 test = [

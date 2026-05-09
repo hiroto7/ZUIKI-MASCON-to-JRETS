@@ -295,6 +295,10 @@ if __name__ == "__main__":
                     pass
 
             if args.verbose:
-                print(notch.name, raw_notch.name, {button.name for button in pressed_buttons})
+                print(
+                    notch.name,
+                    raw_notch.name,
+                    {button.name for button in pressed_buttons},
+                )
 
         clock.tick(60)
