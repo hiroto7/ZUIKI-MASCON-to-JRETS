@@ -8,7 +8,7 @@ dependencies = [
     "pyobjc-core==12.1; platform_system == 'Darwin'",
     "pyobjc-framework-cocoa==12.1; platform_system == 'Darwin'",
     "pyobjc-framework-quartz==12.1; platform_system == 'Darwin'",
-    "rubicon-objc==0.5.3",
+    "rubicon-objc==0.5.4",
 ]
 
 [dependency-groups]
@@ -17,7 +17,7 @@ dev = [
     "black==26.3.1",
     "flake8==7.3.0",
     "pyinstaller==6.20.0",
-    "pyinstaller-hooks-contrib==2026.4",
+    "pyinstaller-hooks-contrib==2026.5",
     "pytest==9.0.3",
     "pytest-mock==3.15.1",
 ]
