@@ -19,14 +19,15 @@ jobs:
 
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      - name: Set up Python 3.13
-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+      - name: Install uv
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
         with:
-          python-version: "3.13"
+          # Install a specific version of uv.
+          version: "0.11.12"
+      - name: Set up Python
+        run: uv python install
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
-          python -m pip install uv
           uv sync --frozen --dev
       - name: Lint with flake8
         run: |
@@ -44,7 +45,9 @@ jobs:
         run: |
           uv run pytest
       - run: uv run pyinstaller --name "$APP_NAME" --noconsole main.py
-      - run: zip -r "$APP_NAME.app.zip" "$APP_NAME.app"
+      - run: codesign --verify --deep --strict "$APP_NAME.app"
+        working-directory: dist
+      - run: ditto -c -k --sequesterRsrc --keepParent "$APP_NAME.app" "$APP_NAME.app.zip"
         working-directory: dist
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
