@@ -454,10 +454,6 @@ source = { virtual = "." }
 dependencies = [
     { name = "pyautogui" },
     { name = "pygame" },
-    { name = "pyobjc-core", marker = "sys_platform == 'darwin'" },
-    { name = "pyobjc-framework-cocoa", marker = "sys_platform == 'darwin'" },
-    { name = "pyobjc-framework-quartz", marker = "sys_platform == 'darwin'" },
-    { name = "rubicon-objc" },
 ]
 
 [package.dev-dependencies]
@@ -466,7 +462,6 @@ dev = [
     { name = "black" },
     { name = "flake8" },
     { name = "pyinstaller" },
-    { name = "pyinstaller-hooks-contrib" },
     { name = "pytest" },
     { name = "pytest-mock" },
 ]
@@ -475,10 +470,6 @@ dev = [
 requires-dist = [
     { name = "pyautogui", specifier = "==0.9.54" },
     { name = "pygame", specifier = "==2.6.1" },
-    { name = "pyobjc-core", marker = "sys_platform == 'darwin'", specifier = "==12.1" },
-    { name = "pyobjc-framework-cocoa", marker = "sys_platform == 'darwin'", specifier = "==12.1" },
-    { name = "pyobjc-framework-quartz", marker = "sys_platform == 'darwin'", specifier = "==12.1" },
-    { name = "rubicon-objc", specifier = "==0.5.4" },
 ]
 
 [package.metadata.requires-dev]
@@ -487,7 +478,6 @@ dev = [
     { name = "black", specifier = "==26.3.1" },
     { name = "flake8", specifier = "==7.3.0" },
     { name = "pyinstaller", specifier = "==6.20.0" },
-    { name = "pyinstaller-hooks-contrib", specifier = "==2026.5" },
     { name = "pytest", specifier = "==9.0.3" },
     { name = "pytest-mock", specifier = "==3.15.1" },
 ]
