@@ -9,8 +9,8 @@ dependencies = [
 
 [dependency-groups]
 dev = [
-    "basedpyright>=1.39.3",
-    "black==26.3.1",
+    "basedpyright>=1.39.4",
+    "black==26.5.0",
     "flake8==7.3.0",
     "pyinstaller==6.20.0",
     "pytest==9.0.3",
