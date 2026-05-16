@@ -80,7 +80,7 @@ class StatusWindow:
                 relief="flat",
                 padx=8,
                 pady=4,
-                cursor="pointinghand",
+                cursor="hand2",
             )
             button.bind(
                 "<Button-1>",
