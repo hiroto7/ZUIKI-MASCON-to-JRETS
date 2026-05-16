@@ -18,7 +18,7 @@ env:
   APP_NAME: ZUIKI-MASCON-to-JRETS
 
 jobs:
-  build:
+  test:
     strategy:
       matrix:
         os: [macos-latest, ubuntu-latest]
@@ -34,8 +34,7 @@ jobs:
       - name: Set up Python
         run: uv python install
       - name: Install dependencies
-        run: |
-          uv sync --frozen --dev
+        run: uv sync --frozen --dev
       - name: Lint with flake8
         run: |
           # stop the build if there are Python syntax errors or undefined names
@@ -43,29 +42,37 @@ jobs:
           # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
           uv run flake8 . --exclude .venv --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
       - name: Format check with black
-        run: |
-          uv run black --check .
+        run: uv run black --check .
       - name: Type check with basedpyright
-        run: |
-          uv run basedpyright
+        run: uv run basedpyright
       - name: Test with pytest
-        run: |
-          uv run pytest
+        run: uv run pytest
+
+  package-macos:
+    needs: test
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Install uv
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          version: "0.11.12"
+      - name: Set up Python
+        run: uv python install
+      - name: Install dependencies
+        run: uv sync --frozen --dev
       - run: uv run pyinstaller --name "$APP_NAME" --noconsole main.py
-        if: matrix.os == 'macos-latest'
       - run: codesign --verify --deep --strict "$APP_NAME.app"
-        if: matrix.os == 'macos-latest'
         working-directory: dist
       - run: ditto -c -k --sequesterRsrc --keepParent "$APP_NAME.app" "$APP_NAME.app.zip"
-        if: matrix.os == 'macos-latest'
         working-directory: dist
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        if: matrix.os == 'macos-latest'
         with:
           name: ${{ env.APP_NAME }}.app
           path: dist/${{ env.APP_NAME }}.app.zip
       - uses: softprops/action-gh-release@b4309332981a82ec1c5618f44dd2e27cc8bfbfda # v3.0.0
-        if: matrix.os == 'macos-latest' && startsWith(github.ref, 'refs/tags/')
+        if: startsWith(github.ref, 'refs/tags/')
         with:
           files: dist/${{ env.APP_NAME }}.app.zip
           make_latest: true
