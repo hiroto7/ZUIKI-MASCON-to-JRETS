@@ -20,22 +20,30 @@ from version_info import BUILD_LABEL
 
 ACCESSIBILITY_PERMISSION_POLL_INTERVAL_MS = 1000
 
+COLOR_BACKGROUND = "#f6f8fa"
+COLOR_TEXT = "#24292f"
+COLOR_MUTED = "#57606a"
+COLOR_SURFACE = "#ffffff"
+COLOR_DANGER = "#b42318"
+COLOR_POWER = "#0969da"
+COLOR_BRAKE = "#cf222e"
+
 
 def color_for_notch(current_notch: Notch) -> str:
     if current_notch == Notch.EB:
-        return "#b42318"
+        return COLOR_DANGER
     if current_notch >= Notch.P1:
-        return "#0969da"
+        return COLOR_POWER
     if current_notch == Notch.N:
-        return "#57606a"
-    return "#cf222e"
+        return COLOR_MUTED
+    return COLOR_BRAKE
 
 
 def accessibility_permission_status(granted: bool) -> tuple[str, str]:
     if granted:
-        return ("アクセシビリティ権限: 許可済み", "#57606a")
+        return ("アクセシビリティ権限: 許可済み", COLOR_MUTED)
 
-    return ("アクセシビリティ権限: 未許可", "#b42318")
+    return ("アクセシビリティ権限: 未許可", COLOR_DANGER)
 
 
 def should_show_accessibility_permission_status() -> bool:
@@ -54,19 +62,19 @@ class StatusWindow:
             "640x360" if self.show_accessibility_permission_status else "640x320"
         )
         self.root.resizable(False, False)
-        self.root.configure(bg="#f6f8fa")
+        self.root.configure(bg=COLOR_BACKGROUND)
         self.root.protocol("WM_DELETE_WINDOW", self.close)
 
         self.title_label = tk.Label(
             root,
             text="ZUIKI MASCON to JRETS",
             font=("Helvetica", 16, "bold"),
-            bg="#f6f8fa",
-            fg="#24292f",
+            bg=COLOR_BACKGROUND,
+            fg=COLOR_TEXT,
         )
         self.title_label.pack(pady=(16, 8))
 
-        self.main_frame = tk.Frame(root, bg="#f6f8fa")
+        self.main_frame = tk.Frame(root, bg=COLOR_BACKGROUND)
         self.main_frame.pack(fill="x", padx=24)
 
         self.notch_label = tk.Label(
@@ -74,23 +82,23 @@ class StatusWindow:
             text=Notch.N.name,
             width=4,
             font=("Helvetica", 48, "bold"),
-            bg="#f6f8fa",
+            bg=COLOR_BACKGROUND,
             fg=color_for_notch(Notch.N),
         )
         self.notch_label.pack(side="left", padx=(0, 20))
 
-        self.info_frame = tk.Frame(self.main_frame, bg="#f6f8fa")
+        self.info_frame = tk.Frame(self.main_frame, bg=COLOR_BACKGROUND)
         self.info_frame.pack(side="left", fill="x", expand=True)
 
-        self.profile_frame = tk.Frame(self.info_frame, bg="#f6f8fa")
+        self.profile_frame = tk.Frame(self.info_frame, bg=COLOR_BACKGROUND)
         self.profile_frame.pack(fill="x", pady=2)
 
         self.profile_title = tk.Label(
             self.profile_frame,
             text="車種:",
             font=("Helvetica", 12),
-            bg="#f6f8fa",
-            fg="#57606a",
+            bg=COLOR_BACKGROUND,
+            fg=COLOR_MUTED,
         )
         self.profile_title.pack(side="left")
 
@@ -117,23 +125,23 @@ class StatusWindow:
             self.profile_frame,
             anchor="w",
             font=("Helvetica", 12),
-            bg="#f6f8fa",
-            fg="#57606a",
+            bg=COLOR_BACKGROUND,
+            fg=COLOR_MUTED,
         )
         self.profile_limit_label.pack(side="left", padx=(10, 0))
 
         self.raw_label = self.create_info_label()
         self.controller_label = self.create_info_label()
 
-        self.accessibility_frame = tk.Frame(self.info_frame, bg="#f6f8fa")
+        self.accessibility_frame = tk.Frame(self.info_frame, bg=COLOR_BACKGROUND)
         if self.show_accessibility_permission_status:
             self.accessibility_frame.pack(fill="x", pady=2)
         self.accessibility_label = tk.Label(
             self.accessibility_frame,
             anchor="w",
             font=("Helvetica", 12),
-            bg="#f6f8fa",
-            fg="#57606a",
+            bg=COLOR_BACKGROUND,
+            fg=COLOR_MUTED,
         )
         if self.show_accessibility_permission_status:
             self.accessibility_label.pack(side="left")
@@ -141,10 +149,10 @@ class StatusWindow:
             self.accessibility_frame,
             text="システム設定で許可する",
             font=("Helvetica", 10),
-            bg="#ffffff",
-            fg="#24292f",
-            activebackground="#f6f8fa",
-            activeforeground="#24292f",
+            bg=COLOR_SURFACE,
+            fg=COLOR_TEXT,
+            activebackground=COLOR_BACKGROUND,
+            activeforeground=COLOR_TEXT,
             relief="flat",
             padx=8,
             pady=3,
@@ -152,7 +160,7 @@ class StatusWindow:
             command=open_accessibility_settings,
         )
 
-        self.notch_bar = tk.Frame(root, bg="#f6f8fa")
+        self.notch_bar = tk.Frame(root, bg=COLOR_BACKGROUND)
         self.notch_bar.pack(pady=(14, 14))
 
         self.notch_labels: dict[Notch, tk.Label] = {}
@@ -162,20 +170,20 @@ class StatusWindow:
             root,
             text="押下中のボタン",
             font=("Helvetica", 11),
-            bg="#f6f8fa",
-            fg="#57606a",
+            bg=COLOR_BACKGROUND,
+            fg=COLOR_MUTED,
         )
         self.buttons_title.pack()
 
-        self.buttons_frame = tk.Frame(root, bg="#f6f8fa", height=28)
+        self.buttons_frame = tk.Frame(root, bg=COLOR_BACKGROUND, height=28)
         self.buttons_frame.pack(pady=(4, 0))
 
         self.version_label = tk.Label(
             root,
             text=BUILD_LABEL,
             font=("Helvetica", 10),
-            bg="#f6f8fa",
-            fg="#57606a",
+            bg=COLOR_BACKGROUND,
+            fg=COLOR_MUTED,
         )
         self.version_label.pack(side="bottom", pady=(0, 8))
 
@@ -189,8 +197,8 @@ class StatusWindow:
             self.info_frame,
             anchor="w",
             font=("Helvetica", font_size),
-            bg="#f6f8fa",
-            fg="#57606a",
+            bg=COLOR_BACKGROUND,
+            fg=COLOR_MUTED,
         )
         label.pack(fill="x", pady=2)
         return label
@@ -211,25 +219,25 @@ class StatusWindow:
         if self.controller.joysticks:
             self.controller_label.config(
                 text=f"コントローラー認識数: {len(self.controller.joysticks)}",
-                fg="#57606a",
+                fg=COLOR_MUTED,
             )
         else:
             self.controller_label.config(
                 text="コントローラーが認識されていません",
-                fg="#b42318",
+                fg=COLOR_DANGER,
             )
 
         for train_profile, button in self.profile_buttons.items():
             if train_profile == self.controller.profile:
-                button.config(bg="#24292f", fg="#ffffff")
+                button.config(bg=COLOR_TEXT, fg=COLOR_SURFACE)
             else:
-                button.config(bg="#ffffff", fg="#24292f")
+                button.config(bg=COLOR_SURFACE, fg=COLOR_TEXT)
 
         for item, label in self.notch_labels.items():
             if item == self.controller.notch:
-                label.config(bg=color_for_notch(item), fg="#ffffff")
+                label.config(bg=color_for_notch(item), fg=COLOR_SURFACE)
             else:
-                label.config(bg="#ffffff", fg="#57606a")
+                label.config(bg=COLOR_SURFACE, fg=COLOR_MUTED)
 
         current_buttons = {button.name for button in self.controller.pressed_buttons}
 
@@ -239,8 +247,8 @@ class StatusWindow:
                     self.buttons_frame,
                     text=button_name,
                     font=("Helvetica", 10, "bold"),
-                    bg="#24292f",
-                    fg="#ffffff",
+                    bg=COLOR_TEXT,
+                    fg=COLOR_SURFACE,
                     padx=8,
                     pady=3,
                 )
@@ -286,8 +294,8 @@ class StatusWindow:
                 text=item.name,
                 width=3,
                 font=("Helvetica", 10, "bold"),
-                bg="#ffffff",
-                fg="#57606a",
+                bg=COLOR_SURFACE,
+                fg=COLOR_MUTED,
                 relief="flat",
                 padx=4,
                 pady=4,
