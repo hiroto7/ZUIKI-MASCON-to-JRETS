@@ -11,6 +11,7 @@ from mascon_controller import (
     TrainProfile,
     effective_notch_order,
 )
+from version_info import BUILD_LABEL
 
 
 def color_for_notch(current_notch: Notch) -> str:
@@ -28,7 +29,7 @@ class StatusWindow:
         self.root = root
         self.controller = controller
         self.root.title("ZUIKI MASCON to JRETS")
-        self.root.geometry("640x300")
+        self.root.geometry("640x320")
         self.root.resizable(False, False)
         self.root.configure(bg="#f6f8fa")
         self.root.protocol("WM_DELETE_WINDOW", self.close)
@@ -118,6 +119,15 @@ class StatusWindow:
 
         self.buttons_frame = tk.Frame(root, bg="#f6f8fa", height=28)
         self.buttons_frame.pack(pady=(4, 0))
+
+        self.version_label = tk.Label(
+            root,
+            text=BUILD_LABEL,
+            font=("Helvetica", 10),
+            bg="#f6f8fa",
+            fg="#57606a",
+        )
+        self.version_label.pack(side="bottom", pady=(0, 8))
 
         self.button_labels: dict[str, tk.Label] = {}
         self.update_status()

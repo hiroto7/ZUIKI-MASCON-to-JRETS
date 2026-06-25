@@ -62,6 +62,11 @@ jobs:
         run: uv python install
       - name: Install dependencies
         run: uv sync --frozen --dev
+      - name: Embed build version
+        env:
+          BUILD_REF: ${{ github.ref_name }}
+          BUILD_SHA: ${{ github.sha }}
+        run: python scripts/embed_build_version.py
       - run: uv run pyinstaller --name "$APP_NAME" --noconsole main.py
       - run: codesign --verify --deep --strict "$APP_NAME.app"
         working-directory: dist
