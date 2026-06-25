@@ -5,6 +5,11 @@ from typing import Protocol
 
 import pygame
 
+from accessibility_permission import (
+    is_accessibility_permission_granted,
+    is_macos,
+    prompt_for_accessibility_permission,
+)
 from mascon_controller import (
     INPUT_POLL_HZ,
     PYGAME_POLL_INTERVAL_MS,
@@ -35,6 +40,17 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("-v", "--verbose", action="store_true")
     return parser.parse_args()
+
+
+def warn_if_accessibility_permission_is_missing() -> None:
+    if is_macos() and not is_accessibility_permission_granted():
+        print(
+            "アクセシビリティ権限が未許可です。"
+            "キー入力がJRETSに反映されない場合は、"
+            "システム設定 > プライバシーとセキュリティ > "
+            "アクセシビリティを確認してください。",
+            file=sys.stderr,
+        )
 
 
 def handle_pygame_events(
@@ -104,11 +120,18 @@ def run_gui(controller: MasconController, args: argparse.Namespace) -> None:
     root.mainloop()
 
 
-if __name__ == "__main__":
+def main() -> None:
     args = parse_args()
     controller = MasconController(profile=TrainProfile[args.profile.upper()])
+
+    prompt_for_accessibility_permission()
+    warn_if_accessibility_permission_is_missing()
 
     if args.no_gui:
         run_no_gui(controller, args)
     else:
         run_gui(controller, args)
+
+
+if __name__ == "__main__":
+    main()

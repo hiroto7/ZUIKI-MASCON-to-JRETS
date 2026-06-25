@@ -3,6 +3,11 @@ import tkinter as tk
 
 import pygame
 
+from accessibility_permission import (
+    is_accessibility_permission_granted,
+    is_macos,
+    open_accessibility_settings,
+)
 from mascon_controller import (
     PROFILE_LABELS,
     PYGAME_POLL_INTERVAL_MS,
@@ -12,6 +17,8 @@ from mascon_controller import (
     effective_notch_order,
 )
 from version_info import BUILD_LABEL
+
+ACCESSIBILITY_PERMISSION_POLL_INTERVAL_MS = 1000
 
 
 def color_for_notch(current_notch: Notch) -> str:
@@ -24,12 +31,28 @@ def color_for_notch(current_notch: Notch) -> str:
     return "#cf222e"
 
 
+def accessibility_permission_status(granted: bool) -> tuple[str, str]:
+    if granted:
+        return ("アクセシビリティ権限: 許可済み", "#57606a")
+
+    return ("アクセシビリティ権限: 未許可", "#b42318")
+
+
+def should_show_accessibility_permission_status() -> bool:
+    return is_macos()
+
+
 class StatusWindow:
     def __init__(self, root: tk.Tk, controller: MasconController) -> None:
         self.root = root
         self.controller = controller
+        self.show_accessibility_permission_status = (
+            should_show_accessibility_permission_status()
+        )
         self.root.title("ZUIKI MASCON to JRETS")
-        self.root.geometry("640x320")
+        self.root.geometry(
+            "640x360" if self.show_accessibility_permission_status else "640x320"
+        )
         self.root.resizable(False, False)
         self.root.configure(bg="#f6f8fa")
         self.root.protocol("WM_DELETE_WINDOW", self.close)
@@ -102,6 +125,33 @@ class StatusWindow:
         self.raw_label = self.create_info_label()
         self.controller_label = self.create_info_label()
 
+        self.accessibility_frame = tk.Frame(self.info_frame, bg="#f6f8fa")
+        if self.show_accessibility_permission_status:
+            self.accessibility_frame.pack(fill="x", pady=2)
+        self.accessibility_label = tk.Label(
+            self.accessibility_frame,
+            anchor="w",
+            font=("Helvetica", 12),
+            bg="#f6f8fa",
+            fg="#57606a",
+        )
+        if self.show_accessibility_permission_status:
+            self.accessibility_label.pack(side="left")
+        self.accessibility_settings_button = tk.Button(
+            self.accessibility_frame,
+            text="システム設定で許可する",
+            font=("Helvetica", 10),
+            bg="#ffffff",
+            fg="#24292f",
+            activebackground="#f6f8fa",
+            activeforeground="#24292f",
+            relief="flat",
+            padx=8,
+            pady=3,
+            cursor="hand2",
+            command=open_accessibility_settings,
+        )
+
         self.notch_bar = tk.Frame(root, bg="#f6f8fa")
         self.notch_bar.pack(pady=(14, 14))
 
@@ -130,13 +180,15 @@ class StatusWindow:
         self.version_label.pack(side="bottom", pady=(0, 8))
 
         self.button_labels: dict[str, tk.Label] = {}
+        if self.show_accessibility_permission_status:
+            self.update_accessibility_status()
         self.update_status()
 
-    def create_info_label(self) -> tk.Label:
+    def create_info_label(self, font_size: int = 12) -> tk.Label:
         label = tk.Label(
             self.info_frame,
             anchor="w",
-            font=("Helvetica", 12),
+            font=("Helvetica", font_size),
             bg="#f6f8fa",
             fg="#57606a",
         )
@@ -203,6 +255,25 @@ class StatusWindow:
     def update_status(self) -> None:
         self.render_status()
         self.root.after(PYGAME_POLL_INTERVAL_MS, self.update_status)
+
+    def update_accessibility_status(self) -> None:
+        is_accessibility_granted = is_accessibility_permission_granted()
+        accessibility_text, accessibility_color = accessibility_permission_status(
+            is_accessibility_granted
+        )
+        self.accessibility_label.config(
+            text=accessibility_text,
+            fg=accessibility_color,
+        )
+        if is_accessibility_granted:
+            self.accessibility_settings_button.pack_forget()
+        else:
+            if not self.accessibility_settings_button.winfo_manager():
+                self.accessibility_settings_button.pack(side="left", padx=(8, 0))
+        self.root.after(
+            ACCESSIBILITY_PERMISSION_POLL_INTERVAL_MS,
+            self.update_accessibility_status,
+        )
 
     def rebuild_notch_bar(self) -> None:
         for label in self.notch_labels.values():
