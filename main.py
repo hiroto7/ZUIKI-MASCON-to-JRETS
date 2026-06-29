@@ -1,5 +1,6 @@
 import argparse
 import sys
+import tkinter as tk
 from collections.abc import Callable
 from typing import Protocol
 
@@ -16,6 +17,7 @@ from mascon_controller import (
     TrainProfile,
     ZuikiMasconButton,
 )
+from status_window import StatusWindow
 
 
 class TkRoot(Protocol):
@@ -90,10 +92,12 @@ def initialize_pygame(controller: MasconController) -> None:
     controller.initialize_joysticks()
 
 
-def run_app(controller: MasconController, args: argparse.Namespace) -> None:
-    import tkinter as tk
+def main() -> None:
+    args = parse_args()
+    controller = MasconController(profile=TrainProfile[args.profile.upper()])
 
-    from status_window import StatusWindow
+    prompt_for_accessibility_permission()
+    warn_if_accessibility_permission_is_missing()
 
     root = tk.Tk()
     StatusWindow(root, controller)
@@ -102,15 +106,6 @@ def run_app(controller: MasconController, args: argparse.Namespace) -> None:
 
     poll_pygame_events(root, controller, args)
     root.mainloop()
-
-
-def main() -> None:
-    args = parse_args()
-    controller = MasconController(profile=TrainProfile[args.profile.upper()])
-
-    prompt_for_accessibility_permission()
-    warn_if_accessibility_permission_is_missing()
-    run_app(controller, args)
 
 
 if __name__ == "__main__":
