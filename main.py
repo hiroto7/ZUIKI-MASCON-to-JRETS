@@ -1,5 +1,6 @@
 import argparse
 import sys
+import tkinter as tk
 from collections.abc import Callable
 from typing import Protocol
 
@@ -11,12 +12,12 @@ from accessibility_permission import (
     prompt_for_accessibility_permission,
 )
 from mascon_controller import (
-    INPUT_POLL_HZ,
     PYGAME_POLL_INTERVAL_MS,
     MasconController,
     TrainProfile,
     ZuikiMasconButton,
 )
+from status_window import StatusWindow
 
 
 class TkRoot(Protocol):
@@ -32,11 +33,6 @@ def parse_args() -> argparse.Namespace:
         choices=("default", "tobu", "seibu"),
         default="default",
         help="Train profile for notch limits. default preserves the previous behavior.",
-    )
-    parser.add_argument(
-        "--no-gui",
-        action="store_true",
-        help="Run without the tkinter status window.",
     )
     parser.add_argument("-v", "--verbose", action="store_true")
     return parser.parse_args()
@@ -96,20 +92,12 @@ def initialize_pygame(controller: MasconController) -> None:
     controller.initialize_joysticks()
 
 
-def run_no_gui(controller: MasconController, args: argparse.Namespace) -> None:
-    initialize_pygame(controller)
+def main() -> None:
+    args = parse_args()
+    controller = MasconController(profile=TrainProfile[args.profile.upper()])
 
-    clock = pygame.time.Clock()
-
-    while True:
-        handle_pygame_events(controller, args)
-        clock.tick(INPUT_POLL_HZ)
-
-
-def run_gui(controller: MasconController, args: argparse.Namespace) -> None:
-    import tkinter as tk
-
-    from status_window import StatusWindow
+    prompt_for_accessibility_permission()
+    warn_if_accessibility_permission_is_missing()
 
     root = tk.Tk()
     StatusWindow(root, controller)
@@ -118,19 +106,6 @@ def run_gui(controller: MasconController, args: argparse.Namespace) -> None:
 
     poll_pygame_events(root, controller, args)
     root.mainloop()
-
-
-def main() -> None:
-    args = parse_args()
-    controller = MasconController(profile=TrainProfile[args.profile.upper()])
-
-    prompt_for_accessibility_permission()
-    warn_if_accessibility_permission_is_missing()
-
-    if args.no_gui:
-        run_no_gui(controller, args)
-    else:
-        run_gui(controller, args)
 
 
 if __name__ == "__main__":

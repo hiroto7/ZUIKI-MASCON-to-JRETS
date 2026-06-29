@@ -54,57 +54,27 @@ def test_warn_if_accessibility_permission_is_missing_skips_non_macos(
     permission_mock.assert_not_called()
 
 
-def test_run_gui_starts_status_window(
+def test_main_starts_status_window(
     mocker: MockerFixture,
 ) -> None:
+    args = Namespace(profile="default", verbose=False)
     root = Mock()
-    tk_mock = Mock()
-    tk_mock.Tk.return_value = root
-    status_window_mock = mocker.patch("status_window.StatusWindow")
+    mocker.patch("main.parse_args", return_value=args)
+    mocker.patch("main.tk.Tk", return_value=root)
+    prompt_mock = mocker.patch("main.prompt_for_accessibility_permission")
+    warn_mock = mocker.patch("main.warn_if_accessibility_permission_is_missing")
+    status_window_mock = mocker.patch("main.StatusWindow")
     initialize_mock = mocker.patch("main.initialize_pygame")
     poll_mock = mocker.patch("main.poll_pygame_events")
-    mocker.patch.dict(sys.modules, {"tkinter": tk_mock})
-    controller = MasconController()
 
-    main.run_gui(controller, Namespace(verbose=False))
+    main.main()
 
-    status_window_mock.assert_called_once_with(root, controller)
+    prompt_mock.assert_called_once_with()
+    warn_mock.assert_called_once_with()
+    status_window_mock.assert_called_once()
+    controller = status_window_mock.call_args.args[1]
+    assert isinstance(controller, MasconController)
+    assert controller.profile == main.TrainProfile.DEFAULT
     initialize_mock.assert_called_once_with(controller)
-    poll_mock.assert_called_once_with(root, controller, Namespace(verbose=False))
+    poll_mock.assert_called_once_with(root, controller, args)
     root.mainloop.assert_called_once_with()
-
-
-def test_main_prompts_for_accessibility_permission_before_running(
-    mocker: MockerFixture,
-) -> None:
-    args = Namespace(profile="default", no_gui=False, verbose=False)
-    mocker.patch("main.parse_args", return_value=args)
-    prompt_mock = mocker.patch("main.prompt_for_accessibility_permission")
-    warn_mock = mocker.patch("main.warn_if_accessibility_permission_is_missing")
-    run_gui_mock = mocker.patch("main.run_gui")
-    run_no_gui_mock = mocker.patch("main.run_no_gui")
-
-    main.main()
-
-    prompt_mock.assert_called_once_with()
-    warn_mock.assert_called_once_with()
-    run_gui_mock.assert_called_once()
-    run_no_gui_mock.assert_not_called()
-
-
-def test_main_runs_no_gui_when_requested(
-    mocker: MockerFixture,
-) -> None:
-    args = Namespace(profile="default", no_gui=True, verbose=False)
-    mocker.patch("main.parse_args", return_value=args)
-    prompt_mock = mocker.patch("main.prompt_for_accessibility_permission")
-    warn_mock = mocker.patch("main.warn_if_accessibility_permission_is_missing")
-    run_gui_mock = mocker.patch("main.run_gui")
-    run_no_gui_mock = mocker.patch("main.run_no_gui")
-
-    main.main()
-
-    prompt_mock.assert_called_once_with()
-    warn_mock.assert_called_once_with()
-    run_no_gui_mock.assert_called_once()
-    run_gui_mock.assert_not_called()
