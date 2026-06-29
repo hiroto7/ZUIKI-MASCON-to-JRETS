@@ -54,7 +54,7 @@ def test_warn_if_accessibility_permission_is_missing_skips_non_macos(
     permission_mock.assert_not_called()
 
 
-def test_main_starts_status_window_after_permission_checks(
+def test_main_starts_status_window(
     mocker: MockerFixture,
 ) -> None:
     args = Namespace(profile="default", verbose=False)
