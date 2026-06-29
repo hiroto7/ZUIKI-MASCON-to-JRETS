@@ -54,7 +54,7 @@ def test_warn_if_accessibility_permission_is_missing_skips_non_macos(
     permission_mock.assert_not_called()
 
 
-def test_run_gui_starts_status_window(
+def test_run_app_starts_status_window(
     mocker: MockerFixture,
 ) -> None:
     root = Mock()
@@ -66,7 +66,7 @@ def test_run_gui_starts_status_window(
     mocker.patch.dict(sys.modules, {"tkinter": tk_mock})
     controller = MasconController()
 
-    main.run_gui(controller, Namespace(verbose=False))
+    main.run_app(controller, Namespace(verbose=False))
 
     status_window_mock.assert_called_once_with(root, controller)
     initialize_mock.assert_called_once_with(controller)
@@ -77,34 +77,14 @@ def test_run_gui_starts_status_window(
 def test_main_prompts_for_accessibility_permission_before_running(
     mocker: MockerFixture,
 ) -> None:
-    args = Namespace(profile="default", no_gui=False, verbose=False)
+    args = Namespace(profile="default", verbose=False)
     mocker.patch("main.parse_args", return_value=args)
     prompt_mock = mocker.patch("main.prompt_for_accessibility_permission")
     warn_mock = mocker.patch("main.warn_if_accessibility_permission_is_missing")
-    run_gui_mock = mocker.patch("main.run_gui")
-    run_no_gui_mock = mocker.patch("main.run_no_gui")
+    run_app_mock = mocker.patch("main.run_app")
 
     main.main()
 
     prompt_mock.assert_called_once_with()
     warn_mock.assert_called_once_with()
-    run_gui_mock.assert_called_once()
-    run_no_gui_mock.assert_not_called()
-
-
-def test_main_runs_no_gui_when_requested(
-    mocker: MockerFixture,
-) -> None:
-    args = Namespace(profile="default", no_gui=True, verbose=False)
-    mocker.patch("main.parse_args", return_value=args)
-    prompt_mock = mocker.patch("main.prompt_for_accessibility_permission")
-    warn_mock = mocker.patch("main.warn_if_accessibility_permission_is_missing")
-    run_gui_mock = mocker.patch("main.run_gui")
-    run_no_gui_mock = mocker.patch("main.run_no_gui")
-
-    main.main()
-
-    prompt_mock.assert_called_once_with()
-    warn_mock.assert_called_once_with()
-    run_no_gui_mock.assert_called_once()
-    run_gui_mock.assert_not_called()
+    run_app_mock.assert_called_once()

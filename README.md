@@ -56,7 +56,7 @@ Windowsでは動作を確認していません。
    ```
 3. main.py を実行する
    ```bash
-   uv run python main.py --no-gui
+   uv run python main.py --verbose
    ```
 
    - Linuxで `Authorization required` というエラーが出る場合は、次のコマンドを実行してから再度 main.py を実行する
@@ -66,8 +66,8 @@ Windowsでは動作を確認していません。
    - Macでアクセシビリティ権限が未許可という警告が表示される場合、システム設定 > プライバシーとセキュリティ > アクセシビリティで使用中のアプリまたはターミナルを許可する
    - 東武・西武の車両を運転する場合は、車両に合わせて `--profile` を指定する
      ```bash
-     uv run python main.py --no-gui --profile tobu
-     uv run python main.py --no-gui --profile seibu
+     uv run python main.py --verbose --profile tobu
+     uv run python main.py --verbose --profile seibu
      ```
 4. この状態でJRETSの運転画面に進み、一度マスコンをNまたはEBに合わせる
 5. 運転を開始する
