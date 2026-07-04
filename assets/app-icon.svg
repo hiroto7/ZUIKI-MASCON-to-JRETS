@@ -3,51 +3,68 @@
   <desc id="desc">A stylized train controller with a T-shaped handle, vertical slot, and colored notch indicators.</desc>
   <defs>
     <linearGradient id="backgroundGradient" x1="154" y1="40" x2="870" y2="984" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#182234"/>
-      <stop offset="1" stop-color="#101827"/>
+      <stop offset="0" stop-color="#f4fbff"/>
+      <stop offset="0.54" stop-color="#d2e8f6"/>
+      <stop offset="1" stop-color="#9fbfd4"/>
     </linearGradient>
+    <radialGradient id="backgroundLight" cx="320" cy="214" r="740" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.72"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
     <linearGradient id="panelGradient" x1="258" y1="326" x2="792" y2="812" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#404751"/>
-      <stop offset="1" stop-color="#2f363f"/>
+      <stop offset="0" stop-color="#637080"/>
+      <stop offset="0.52" stop-color="#46515e"/>
+      <stop offset="1" stop-color="#313b46"/>
+    </linearGradient>
+    <linearGradient id="panelRimGradient" x1="222" y1="336" x2="842" y2="828" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#f6fbff" stop-opacity="0.86"/>
+      <stop offset="0.45" stop-color="#b7c9d8" stop-opacity="0.58"/>
+      <stop offset="1" stop-color="#182634" stop-opacity="0.55"/>
     </linearGradient>
     <linearGradient id="slotGradient" x1="312" y1="372" x2="456" y2="776" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#171b20"/>
       <stop offset="1" stop-color="#080a0d"/>
     </linearGradient>
     <linearGradient id="handleGradient" x1="268" y1="168" x2="472" y2="276" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#2f3134"/>
-      <stop offset="0.48" stop-color="#121416"/>
-      <stop offset="1" stop-color="#090a0c"/>
+      <stop offset="0" stop-color="#aeb7c0"/>
+      <stop offset="0.5" stop-color="#596370"/>
+      <stop offset="1" stop-color="#151b23"/>
     </linearGradient>
     <linearGradient id="shaftGradient" x1="338" y1="280" x2="422" y2="624" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#f4f5f5"/>
-      <stop offset="0.58" stop-color="#d8d9d8"/>
-      <stop offset="1" stop-color="#aeb0b0"/>
+      <stop offset="0" stop-color="#eef2f4"/>
+      <stop offset="0.5" stop-color="#c9d0d5"/>
+      <stop offset="1" stop-color="#9ca6ad"/>
     </linearGradient>
   </defs>
 
   <rect x="0" y="0" width="1024" height="1024" fill="url(#backgroundGradient)"/>
-  <rect x="5" y="5" width="1014" height="1014" fill="none" stroke="#243148" stroke-width="10" opacity="0.62"/>
+  <rect x="0" y="0" width="1024" height="1024" fill="url(#backgroundLight)"/>
 
   <g transform="translate(-38 -18) scale(1.08)">
-    <rect x="232" y="370" width="620" height="492" rx="78" fill="#02050a" opacity="0.28"/>
+    <rect x="232" y="382" width="620" height="492" rx="78" fill="#0c1724" opacity="0.22"/>
+    <rect x="210" y="324" width="644" height="516" rx="90" fill="#edf7ff" opacity="0.86"/>
     <rect x="222" y="336" width="620" height="492" rx="78" fill="url(#panelGradient)"/>
-    <rect x="228" y="342" width="608" height="480" rx="72" fill="none" stroke="#59616c" stroke-width="3" opacity="0.36"/>
+    <rect x="228" y="342" width="608" height="480" rx="72" fill="none" stroke="url(#panelRimGradient)" stroke-width="10" opacity="0.9"/>
+    <path d="M292 360h486c31 0 49 4 62 18-17-8-35-12-62-12H292c-31 0-55 6-72 21 14-17 39-27 72-27Z" fill="#ffffff" opacity="0.2"/>
 
-    <rect x="282" y="392" width="174" height="394" rx="62" fill="#252b33" opacity="0.92"/>
+    <rect x="274" y="386" width="190" height="410" rx="70" fill="#edf7ff" opacity="0.24"/>
+    <rect x="282" y="392" width="174" height="394" rx="62" fill="#25303b" opacity="0.96"/>
     <rect x="306" y="418" width="126" height="342" rx="38" fill="url(#slotGradient)"/>
     <rect x="314" y="426" width="110" height="326" rx="30" fill="none" stroke="#050608" stroke-width="12" opacity="0.58"/>
 
     <path d="M342 270h56v338c0 24-13 40-28 40s-28-16-28-40V270Z" fill="#0d0f12" opacity="0.45"/>
+    <path d="M334 262h72v344c0 26-14 42-36 42s-36-16-36-42V262Z" fill="none" stroke="#1b2630" stroke-width="16" stroke-linejoin="round" opacity="0.62"/>
     <path d="M334 262h72v344c0 26-14 42-36 42s-36-16-36-42V262Z" fill="url(#shaftGradient)"/>
-    <path d="M334 262h72v72h-72v-72Z" fill="#fbfbfa" opacity="0.38"/>
-    <path d="M334 594h72v12c0 26-14 42-36 42s-36-16-36-42v-12Z" fill="#c7c8c8" opacity="0.9"/>
+    <path d="M346 270h16v356c0 18-5 30-13 37-10-9-15-24-15-57V270Z" fill="#ffffff" opacity="0.28"/>
+    <path d="M334 262h72v72h-72v-72Z" fill="#ffffff" opacity="0.26"/>
+    <path d="M334 594h72v12c0 26-14 42-36 42s-36-16-36-42v-12Z" fill="#929da5" opacity="0.72"/>
 
-    <rect x="238" y="160" width="268" height="132" rx="51" fill="#2b3546" opacity="0.84"/>
-    <rect x="246" y="168" width="252" height="116" rx="43" fill="#0b0d10"/>
-    <rect x="260" y="178" width="224" height="96" rx="34" fill="url(#handleGradient)"/>
-    <path d="M286 184h172c15 0 26 12 26 27v28H260v-28c0-15 11-27 26-27Z" fill="#ffffff" opacity="0.2"/>
-    <rect x="274" y="191" width="196" height="10" rx="5" fill="#ffffff" opacity="0.13"/>
+    <rect x="210" y="138" width="332" height="174" rx="70" fill="#edf7ff" opacity="0.86"/>
+    <rect x="222" y="150" width="308" height="150" rx="58" fill="#32425a" opacity="0.96"/>
+    <rect x="232" y="160" width="288" height="130" rx="49" fill="#07090d"/>
+    <rect x="248" y="173" width="256" height="104" rx="39" fill="url(#handleGradient)"/>
+    <path d="M280 181h192c18 0 32 14 32 32v30H248v-30c0-18 14-32 32-32Z" fill="#ffffff" opacity="0.24"/>
+    <rect x="268" y="191" width="216" height="12" rx="6" fill="#ffffff" opacity="0.18"/>
 
     <g stroke-linecap="round" stroke-width="14">
       <line x1="508" y1="436" x2="604" y2="436" stroke="#151b23" opacity="0.52"/>
