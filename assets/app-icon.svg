@@ -52,14 +52,14 @@
     <rect x="306" y="418" width="126" height="342" rx="38" fill="url(#slotGradient)"/>
     <rect x="314" y="426" width="110" height="326" rx="30" fill="none" stroke="#050608" stroke-width="12" opacity="0.58"/>
 
-    <path d="M342 270h56v338c0 24-13 40-28 40s-28-16-28-40V270Z" fill="#0d0f12" opacity="0.45"/>
-    <path d="M334 262h72v344c0 26-14 42-36 42s-36-16-36-42V262Z" fill="none" stroke="#1b2630" stroke-width="16" stroke-linejoin="round" opacity="0.62"/>
+    <g stroke="#1b2630" stroke-linecap="butt" stroke-width="8" opacity="0.58">
+      <line x1="334" y1="262" x2="334" y2="610"/>
+      <line x1="406" y1="262" x2="406" y2="610"/>
+    </g>
     <path d="M334 262h72v344c0 26-14 42-36 42s-36-16-36-42V262Z" fill="url(#shaftGradient)"/>
-    <path d="M346 270h16v356c0 18-5 30-13 37-10-9-15-24-15-57V270Z" fill="#ffffff" opacity="0.28"/>
-    <path d="M334 262h72v72h-72v-72Z" fill="#ffffff" opacity="0.26"/>
+    <rect x="346" y="270" width="16" height="338" fill="#ffffff" opacity="0.24"/>
     <path d="M334 594h72v12c0 26-14 42-36 42s-36-16-36-42v-12Z" fill="#929da5" opacity="0.72"/>
 
-    <rect x="210" y="138" width="332" height="174" rx="70" fill="#edf7ff" opacity="0.86"/>
     <rect x="222" y="150" width="308" height="150" rx="58" fill="#32425a" opacity="0.96"/>
     <rect x="232" y="160" width="288" height="130" rx="49" fill="#07090d"/>
     <rect x="248" y="173" width="256" height="104" rx="39" fill="url(#handleGradient)"/>
