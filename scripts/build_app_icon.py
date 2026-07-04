@@ -17,10 +17,16 @@ ICON_SIZES = (
     ("icon_512x512.png", 512),
     ("icon_512x512@2x.png", 1024),
 )
+COMMAND_TIMEOUT_SECONDS = 60
 
 
 def run(command: list[str]) -> None:
-    subprocess.run(command, check=True, stdout=subprocess.DEVNULL)
+    subprocess.run(
+        command,
+        check=True,
+        stdout=subprocess.DEVNULL,
+        timeout=COMMAND_TIMEOUT_SECONDS,
+    )
 
 
 def render_svg_to_png(svg_path: Path, output_dir: Path) -> Path:

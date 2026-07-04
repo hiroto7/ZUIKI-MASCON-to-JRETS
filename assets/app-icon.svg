@@ -26,10 +26,10 @@
     </linearGradient>
   </defs>
 
-  <rect x="32" y="32" width="960" height="960" rx="188" fill="url(#backgroundGradient)"/>
-  <rect x="34" y="34" width="956" height="956" rx="186" fill="none" stroke="#243148" stroke-width="8" opacity="0.62"/>
+  <rect x="0" y="0" width="1024" height="1024" fill="url(#backgroundGradient)"/>
+  <rect x="5" y="5" width="1014" height="1014" fill="none" stroke="#243148" stroke-width="10" opacity="0.62"/>
 
-  <g>
+  <g transform="translate(-38 -18) scale(1.08)">
     <rect x="232" y="370" width="620" height="492" rx="78" fill="#02050a" opacity="0.28"/>
     <rect x="222" y="336" width="620" height="492" rx="78" fill="url(#panelGradient)"/>
     <rect x="228" y="342" width="608" height="480" rx="72" fill="none" stroke="#59616c" stroke-width="3" opacity="0.36"/>
@@ -43,9 +43,11 @@
     <path d="M334 262h72v72h-72v-72Z" fill="#fbfbfa" opacity="0.38"/>
     <path d="M334 594h72v12c0 26-14 42-36 42s-36-16-36-42v-12Z" fill="#c7c8c8" opacity="0.9"/>
 
-    <rect x="246" y="168" width="252" height="116" rx="43" fill="#111316"/>
+    <rect x="238" y="160" width="268" height="132" rx="51" fill="#2b3546" opacity="0.84"/>
+    <rect x="246" y="168" width="252" height="116" rx="43" fill="#0b0d10"/>
     <rect x="260" y="178" width="224" height="96" rx="34" fill="url(#handleGradient)"/>
-    <path d="M286 184h172c15 0 26 12 26 27v22H260v-22c0-15 11-27 26-27Z" fill="#ffffff" opacity="0.12"/>
+    <path d="M286 184h172c15 0 26 12 26 27v28H260v-28c0-15 11-27 26-27Z" fill="#ffffff" opacity="0.2"/>
+    <rect x="274" y="191" width="196" height="10" rx="5" fill="#ffffff" opacity="0.13"/>
 
     <g stroke-linecap="round" stroke-width="14">
       <line x1="508" y1="436" x2="604" y2="436" stroke="#151b23" opacity="0.52"/>
