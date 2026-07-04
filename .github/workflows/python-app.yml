@@ -63,7 +63,9 @@ jobs:
           BUILD_REF: ${{ github.ref_name }}
           BUILD_SHA: ${{ github.sha }}
         run: python scripts/embed_build_version.py
-      - run: uv run pyinstaller --name "$APP_NAME" --noconsole main.py
+      - name: Build app icon
+        run: python scripts/build_app_icon.py
+      - run: uv run pyinstaller --name "$APP_NAME" --noconsole --icon build/app-icon.icns main.py
       - run: codesign --verify --deep --strict "$APP_NAME.app"
         working-directory: dist
       - run: ditto -c -k --sequesterRsrc --keepParent "$APP_NAME.app" "$APP_NAME.app.zip"
