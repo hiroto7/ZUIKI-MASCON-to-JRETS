@@ -63,13 +63,8 @@ jobs:
           BUILD_REF: ${{ github.ref_name }}
           BUILD_SHA: ${{ github.sha }}
         run: python scripts/embed_build_version.py
-      - name: Build app icon
-        run: python scripts/build_app_icon.py
-      - run: uv run pyinstaller --name "$APP_NAME" --noconsole --icon build/app-icon.icns main.py
-      - run: codesign --verify --deep --strict "$APP_NAME.app"
-        working-directory: dist
-      - run: ditto -c -k --sequesterRsrc --keepParent "$APP_NAME.app" "$APP_NAME.app.zip"
-        working-directory: dist
+      - name: Package macOS app
+        run: ./scripts/package_macos_app.sh
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: ${{ env.APP_NAME }}.app
