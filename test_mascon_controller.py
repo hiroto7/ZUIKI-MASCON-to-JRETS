@@ -245,13 +245,14 @@ def test_controller_initialize_joysticks_registers_connected_devices(
 def test_controller_release_all_inputs_releases_pressed_buttons(
     mocker: MockerFixture,
 ) -> None:
-    key_up_mock = mocker.patch("mascon_controller.key_up")
+    keyboard_output = Mock()
     controller = MasconController(pressed_buttons={ZuikiMasconButton.A, DpadButton.UP})
+    controller.keyboard_output = keyboard_output
 
     controller.release_all_inputs()
 
-    key_up_mock.assert_has_calls(
+    keyboard_output.key_up.assert_has_calls(
         [call(ZuikiMasconButton.A), call(DpadButton.UP)], any_order=True
     )
-    assert key_up_mock.call_count == 2
+    assert keyboard_output.key_up.call_count == 2
     assert controller.pressed_buttons == set()

@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
 from enum import Enum, IntEnum, auto
+from typing import Protocol
 
 import pygame
 import pyautogui
@@ -117,19 +118,42 @@ def map_to_keys(button: ZuikiMasconButton | DpadButton) -> tuple[str, ...]:
             return (key,)
 
 
+class KeyboardOutput(Protocol):
+    def press(self, key: str, presses: int | None = None) -> None: ...
+
+    def key_down(self, button: ZuikiMasconButton | DpadButton) -> None: ...
+
+    def key_up(self, button: ZuikiMasconButton | DpadButton) -> None: ...
+
+
+@dataclass(frozen=True)
+class PyAutoGuiKeyboardOutput:
+    def press(self, key: str, presses: int | None = None) -> None:
+        if presses is None:
+            press(key)
+        else:
+            press(key, presses)
+
+    def key_down(self, button: ZuikiMasconButton | DpadButton) -> None:
+        for key in map_to_keys(button):
+            pyautogui.keyDown(key)
+
+    def key_up(self, button: ZuikiMasconButton | DpadButton) -> None:
+        for key in map_to_keys(button):
+            pyautogui.keyUp(key)
+
+            # 矢印キーを押すとfnキーが押されたような状態になる問題への回避策
+            # https://github.com/asweigart/pyautogui/issues/796#issuecomment-1937049349
+            if key in ("up", "down", "left", "right"):
+                pyautogui.keyUp("fn")
+
+
 def key_down(button: ZuikiMasconButton | DpadButton) -> None:
-    for key in map_to_keys(button):
-        pyautogui.keyDown(key)
+    PyAutoGuiKeyboardOutput().key_down(button)
 
 
 def key_up(button: ZuikiMasconButton | DpadButton) -> None:
-    for key in map_to_keys(button):
-        pyautogui.keyUp(key)
-
-        # 矢印キーを押すとfnキーが押されたような状態になる問題への回避策
-        # https://github.com/asweigart/pyautogui/issues/796#issuecomment-1937049349
-        if key in ("up", "down", "left", "right"):
-            pyautogui.keyUp("fn")
+    PyAutoGuiKeyboardOutput().key_up(button)
 
 
 def get_notch(value: float, is_zl_button_pressed: bool) -> Notch:  # noqa: C901
@@ -174,31 +198,38 @@ def project_notch(raw_notch: Notch, profile_limit: ProfileLimit) -> Notch:
         return raw_notch
 
 
-def update_notch(current: Notch, next_notch: Notch, max_brake: Notch) -> None:
+def update_notch(
+    current: Notch,
+    next_notch: Notch,
+    max_brake: Notch,
+    keyboard_output: KeyboardOutput | None = None,
+) -> None:
+    keyboard = keyboard_output or PyAutoGuiKeyboardOutput()
+
     if current == next_notch:
         return
     elif Notch.N <= current < next_notch:
-        press("z", next_notch - current)
+        keyboard.press("z", next_notch - current)
     elif current <= Notch.N and next_notch == Notch.EB:
-        press("/")
+        keyboard.press("/")
     elif next_notch < current <= Notch.N:
-        press(".", current - next_notch)
+        keyboard.press(".", current - next_notch)
     elif current >= Notch.P1:
         if next_notch >= Notch.P1:
-            press("a", current - next_notch)
+            keyboard.press("a", current - next_notch)
         else:
-            press("s")
-            return update_notch(Notch.N, next_notch, max_brake)
+            keyboard.press("s")
+            return update_notch(Notch.N, next_notch, max_brake, keyboard)
     elif current <= Notch.B1:
         if next_notch <= Notch.B1:
             if current == Notch.EB:
                 presses = next_notch - max_brake + 1
             else:
                 presses = next_notch - current
-            press(",", presses)
+            keyboard.press(",", presses)
         else:
-            press("m")
-            return update_notch(Notch.N, next_notch, max_brake)
+            keyboard.press("m")
+            return update_notch(Notch.N, next_notch, max_brake, keyboard)
 
 
 def effective_notch_order(profile_limit: ProfileLimit) -> tuple[Notch, ...]:
@@ -216,6 +247,7 @@ class MasconController:
     raw_notch: Notch = Notch.N
     pressed_buttons: set[ZuikiMasconButton | DpadButton] = field(default_factory=set)
     joysticks: dict[int, pygame.joystick.JoystickType] = field(default_factory=dict)
+    keyboard_output: KeyboardOutput = field(default_factory=PyAutoGuiKeyboardOutput)
 
     @property
     def profile_limit(self) -> ProfileLimit:
@@ -230,7 +262,12 @@ class MasconController:
         next_raw_notch = get_notch(value, ZuikiMasconButton.ZL in self.pressed_buttons)
         next_notch = project_notch(next_raw_notch, self.profile_limit)
 
-        update_notch(current_notch, next_notch, self.profile_limit.max_brake)
+        update_notch(
+            current_notch,
+            next_notch,
+            self.profile_limit.max_brake,
+            self.keyboard_output,
+        )
 
         self.raw_notch = next_raw_notch
 
@@ -238,10 +275,15 @@ class MasconController:
         self.pressed_buttons.add(button)
         if button == ZuikiMasconButton.ZL:
             if self.raw_notch == Notch.B8:
-                update_notch(self.notch, Notch.EB, self.profile_limit.max_brake)
+                update_notch(
+                    self.notch,
+                    Notch.EB,
+                    self.profile_limit.max_brake,
+                    self.keyboard_output,
+                )
                 self.raw_notch = Notch.EB
         else:
-            key_down(button)
+            self.keyboard_output.key_down(button)
 
     def handle_button_up(self, button: ZuikiMasconButton) -> None:
         self.pressed_buttons.remove(button)
@@ -250,9 +292,14 @@ class MasconController:
                 current_notch = self.notch
                 self.raw_notch = Notch.B8
                 next_notch = project_notch(self.raw_notch, self.profile_limit)
-                update_notch(current_notch, next_notch, self.profile_limit.max_brake)
+                update_notch(
+                    current_notch,
+                    next_notch,
+                    self.profile_limit.max_brake,
+                    self.keyboard_output,
+                )
         else:
-            key_up(button)
+            self.keyboard_output.key_up(button)
 
     def handle_hat_motion(self, x: int, y: int) -> None:
         for is_pressed, direction in (
@@ -262,10 +309,10 @@ class MasconController:
             (x == 1, DpadButton.RIGHT),
         ):
             if is_pressed and direction not in self.pressed_buttons:
-                key_down(direction)
+                self.keyboard_output.key_down(direction)
                 self.pressed_buttons.add(direction)
             if not is_pressed and direction in self.pressed_buttons:
-                key_up(direction)
+                self.keyboard_output.key_up(direction)
                 self.pressed_buttons.remove(direction)
 
     def change_profile(self, profile: TrainProfile) -> None:
@@ -285,7 +332,7 @@ class MasconController:
     def release_all_inputs(self) -> None:
         for button in list(self.pressed_buttons):
             if button != ZuikiMasconButton.ZL:
-                key_up(button)
+                self.keyboard_output.key_up(button)
             self.pressed_buttons.discard(button)
 
     def print_state(self) -> None:
