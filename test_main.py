@@ -27,6 +27,26 @@ def test_handle_pygame_events_uses_controller(
     handle_axis_motion_mock.assert_called_once_with(1.0)
 
 
+def test_parse_args_hides_experimental_eb_lamp_by_default(
+    mocker: MockerFixture,
+) -> None:
+    mocker.patch.object(sys, "argv", ["main.py"])
+
+    args = main.parse_args()
+
+    assert not args.experimental_eb_lamp
+
+
+def test_parse_args_shows_experimental_eb_lamp_when_enabled(
+    mocker: MockerFixture,
+) -> None:
+    mocker.patch.object(sys, "argv", ["main.py", "--experimental-eb-lamp"])
+
+    args = main.parse_args()
+
+    assert args.experimental_eb_lamp
+
+
 def test_warn_if_accessibility_permission_is_missing_outputs_warning(
     mocker: MockerFixture, capsys: pytest.CaptureFixture[str]
 ) -> None:
@@ -57,7 +77,7 @@ def test_warn_if_accessibility_permission_is_missing_skips_non_macos(
 def test_main_starts_status_window(
     mocker: MockerFixture,
 ) -> None:
-    args = Namespace(profile="default", verbose=False)
+    args = Namespace(profile="default", verbose=False, experimental_eb_lamp=True)
     root = Mock()
     mocker.patch("main.parse_args", return_value=args)
     mocker.patch("main.tk.Tk", return_value=root)
@@ -72,6 +92,7 @@ def test_main_starts_status_window(
     prompt_mock.assert_called_once_with()
     warn_mock.assert_called_once_with()
     status_window_mock.assert_called_once()
+    assert status_window_mock.call_args.kwargs == {"show_eb_lamp": True}
     controller = status_window_mock.call_args.args[1]
     assert isinstance(controller, MasconController)
     assert controller.profile == main.TrainProfile.DEFAULT
