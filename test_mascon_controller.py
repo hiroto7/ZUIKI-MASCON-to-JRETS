@@ -8,7 +8,10 @@ mock = Mock()
 sys.modules["pyautogui"] = mock
 
 from mascon_controller import (  # noqa: E402
+    BUTTON_MAPPINGS,
+    ButtonMapping,
     DpadButton,
+    EB_LAMP_TIMEOUT_SECONDS,
     MasconController,
     Notch,
     PROFILE_LIMITS,
@@ -173,6 +176,102 @@ def test_controller_axis_motion_updates_raw_and_effective_notches(
     assert press_mock.call_args_list == [call("z", 3)]
 
 
+def test_controller_eb_lamp_turns_on_after_timeout() -> None:
+    controller = MasconController(last_driver_operation_at=100.0)
+
+    controller.update_eb_lamp(100.0 + EB_LAMP_TIMEOUT_SECONDS - 0.1)
+
+    assert controller.eb_lamp_on is False
+
+    controller.update_eb_lamp(100.0 + EB_LAMP_TIMEOUT_SECONDS)
+
+    assert controller.eb_lamp_on is True
+
+
+def test_controller_reset_eb_lamp_timer_turns_lamp_off() -> None:
+    controller = MasconController(
+        last_driver_operation_at=100.0,
+        eb_lamp_on=True,
+    )
+
+    controller.reset_eb_lamp_timer(120.0)
+
+    assert controller.last_driver_operation_at == 120.0
+    assert controller.eb_lamp_on is False
+
+
+def test_controller_axis_motion_resets_eb_lamp_when_effective_notch_changes(
+    mocker: MockerFixture,
+) -> None:
+    mocker.patch("mascon_controller.press")
+    mocker.patch("mascon_controller.time.monotonic", return_value=120.0)
+    controller = MasconController(
+        last_driver_operation_at=100.0,
+        eb_lamp_on=True,
+    )
+
+    controller.handle_axis_motion(1.0)
+
+    assert controller.notch == Notch.P5
+    assert controller.eb_lamp_on is False
+    assert controller.last_driver_operation_at == 120.0
+
+
+def test_controller_axis_motion_keeps_eb_timer_when_only_raw_notch_changes(
+    mocker: MockerFixture,
+) -> None:
+    press_mock = mocker.patch("mascon_controller.press")
+    controller = MasconController(
+        profile=TrainProfile.TOBU,
+        raw_notch=Notch.P4,
+        last_driver_operation_at=100.0,
+        eb_lamp_on=True,
+    )
+
+    controller.handle_axis_motion(1.0)
+
+    assert controller.raw_notch == Notch.P5
+    assert controller.notch == Notch.P3
+    assert controller.last_driver_operation_at == 100.0
+    assert controller.eb_lamp_on is True
+    press_mock.assert_not_called()
+
+
+def test_controller_button_down_resets_eb_lamp_for_resetting_mapping(
+    mocker: MockerFixture,
+) -> None:
+    mocker.patch("mascon_controller.key_down")
+    mocker.patch("mascon_controller.time.monotonic", return_value=120.0)
+    mocker.patch.dict(
+        BUTTON_MAPPINGS,
+        {ZuikiMasconButton.MINUS: ButtonMapping(("c",), resets_eb_timer=True)},
+    )
+    controller = MasconController(
+        last_driver_operation_at=100.0,
+        eb_lamp_on=True,
+    )
+
+    controller.handle_button_down(ZuikiMasconButton.MINUS)
+
+    assert controller.eb_lamp_on is False
+    assert controller.last_driver_operation_at == 120.0
+
+
+def test_controller_ats_confirmation_does_not_reset_eb_timer(
+    mocker: MockerFixture,
+) -> None:
+    mocker.patch("mascon_controller.key_down")
+    controller = MasconController(
+        last_driver_operation_at=100.0,
+        eb_lamp_on=True,
+    )
+
+    controller.handle_button_down(ZuikiMasconButton.Y)
+
+    assert controller.last_driver_operation_at == 100.0
+    assert controller.eb_lamp_on is True
+
+
 def test_controller_zl_button_down_enters_emergency_brake(
     mocker: MockerFixture,
 ) -> None:
@@ -215,6 +314,20 @@ def test_controller_change_profile_updates_profile_and_effective_notch() -> None
     assert controller.profile_limit == PROFILE_LIMITS[TrainProfile.TOBU]
     assert controller.raw_notch == Notch.P5
     assert controller.notch == Notch.P3
+
+
+def test_controller_change_profile_does_not_reset_eb_lamp_timer() -> None:
+    controller = MasconController(
+        raw_notch=Notch.P5,
+        last_driver_operation_at=100.0,
+        eb_lamp_on=True,
+    )
+
+    controller.change_profile(TrainProfile.TOBU)
+
+    assert controller.notch == Notch.P3
+    assert controller.last_driver_operation_at == 100.0
+    assert controller.eb_lamp_on is True
 
 
 def test_controller_register_joystick_keeps_joystick_instance(
