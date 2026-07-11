@@ -33,6 +33,16 @@ jobs:
           version: "0.11.12"
       - name: Set up Python
         run: uv python install
+      - name: Install Linux WebView dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes \
+            gir1.2-gtk-3.0 \
+            gir1.2-webkit2-4.1 \
+            libcairo2-dev \
+            libgirepository-2.0-dev \
+            libgirepository1.0-dev
       - name: Install dependencies
         run: uv sync --frozen --dev
       - name: Lint with Ruff
@@ -44,8 +54,25 @@ jobs:
       - name: Test with pytest
         run: uv run pytest
 
+  visual-test:
+    runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.60.0-noble
+
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - run: npm ci
+      - name: Visual regression test
+        run: npm run test:vrt:container
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: failure()
+        with:
+          name: visual-test-results
+          path: test-results
+          if-no-files-found: ignore
+
   package-macos:
-    needs: test
+    needs: [test, visual-test]
     runs-on: macos-latest
 
     steps:

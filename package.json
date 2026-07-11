@@ -1,0 +1,13 @@
+{
+  "name": "zuiki-mascon-to-jrets-ui-tests",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test:vrt": "node scripts/run-vrt-in-docker.mjs",
+    "test:vrt:container": "playwright test",
+    "test:vrt:update": "node scripts/run-vrt-in-docker.mjs --update-snapshots"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.60.0"
+  }
+}

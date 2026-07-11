@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ZUIKI MASCON to JRETS</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="app-header">
+        <div>
+          <h1>ZUIKI MASCON to JRETS</h1>
+        </div>
+        <div id="connection" class="connection connection--offline">
+          <span class="connection__dot"></span>
+          <span id="connection-label">接続待ち</span>
+        </div>
+      </header>
+
+      <section class="dashboard">
+        <article id="notch-card" class="notch-card" data-tone="neutral">
+          <div class="notch-display">
+            <strong id="current-notch" class="current-notch">N</strong>
+            <div class="raw-input">
+              <span>入力値</span>
+              <strong id="raw-notch">N</strong>
+            </div>
+          </div>
+          <div class="notch-range">
+            <div id="notch-track" class="notch-track"></div>
+          </div>
+        </article>
+
+        <div class="control-column">
+          <section class="panel profile-panel">
+            <div class="panel-heading">
+              <div>
+                <h2>車種</h2>
+              </div>
+              <p id="profile-limit" class="profile-limit">P5 / B8</p>
+            </div>
+            <div id="profile-list" class="profile-list"></div>
+          </section>
+
+          <section id="accessibility-panel" class="alert-card" hidden>
+            <div class="alert-card__icon">!</div>
+            <div class="alert-card__body">
+              <strong>アクセシビリティ権限が必要です</strong>
+              <span>JRETSへキー入力を送るために許可してください。</span>
+            </div>
+            <button id="accessibility-button" type="button">設定を開く</button>
+          </section>
+
+          <section class="panel buttons-panel">
+            <div class="panel-heading panel-heading--compact">
+              <div>
+                <h2>押下中のボタン</h2>
+              </div>
+            </div>
+            <div id="pressed-buttons" class="pressed-buttons">
+              <span class="empty-state">ボタン入力はありません</span>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <footer>
+        <span id="build-label">dev</span>
+      </footer>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>

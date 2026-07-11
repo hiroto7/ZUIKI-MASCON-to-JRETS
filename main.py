@@ -1,8 +1,6 @@
 import argparse
+import os
 import sys
-import tkinter as tk
-from collections.abc import Callable
-from typing import Protocol
 
 import pygame
 
@@ -11,19 +9,8 @@ from accessibility_permission import (
     is_macos,
     prompt_for_accessibility_permission,
 )
-from mascon_controller import (
-    PYGAME_POLL_INTERVAL_MS,
-    MasconController,
-    TrainProfile,
-    ZuikiMasconButton,
-)
+from mascon_controller import MasconController, TrainProfile, ZuikiMasconButton
 from status_window import StatusWindow
-
-
-class TkRoot(Protocol):
-    def after(self, ms: int, func: Callable[[], None]) -> object: ...
-
-    def mainloop(self) -> None: ...
 
 
 def parse_args() -> argparse.Namespace:
@@ -68,7 +55,6 @@ def handle_pygame_events(
                 controller.handle_hat_motion(*event.dict["value"])
             case pygame.QUIT:
                 controller.release_all_inputs()
-                sys.exit()
             case _:
                 pass
 
@@ -76,17 +62,10 @@ def handle_pygame_events(
             controller.print_state()
 
 
-def poll_pygame_events(
-    root: TkRoot, controller: MasconController, args: argparse.Namespace
-) -> None:
-    handle_pygame_events(controller, args)
-    root.after(
-        PYGAME_POLL_INTERVAL_MS,
-        lambda: poll_pygame_events(root, controller, args),
-    )
-
-
 def initialize_pygame(controller: MasconController) -> None:
+    # pygame has no visible window in this app. Avoid SDL's Cocoa/X11 event pump so
+    # joystick events can be handled by pywebview's background worker safely.
+    os.environ["SDL_VIDEODRIVER"] = "dummy"
     pygame.init()
     pygame.display.set_allow_screensaver(True)
     controller.initialize_joysticks()
@@ -98,14 +77,13 @@ def main() -> None:
 
     prompt_for_accessibility_permission()
     warn_if_accessibility_permission_is_missing()
-
-    root = tk.Tk()
-    StatusWindow(root, controller)
-
     initialize_pygame(controller)
 
-    poll_pygame_events(root, controller, args)
-    root.mainloop()
+    status_window = StatusWindow(
+        controller,
+        lambda: handle_pygame_events(controller, args),
+    )
+    status_window.run()
 
 
 if __name__ == "__main__":

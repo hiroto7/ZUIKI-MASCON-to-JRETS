@@ -6,6 +6,8 @@ dependencies = [
     "pyautogui==0.9.54",
     "pygame==2.6.1",
     "pyobjc-framework-applicationservices==12.2.1 ; sys_platform == 'darwin'",
+    "pywebview==6.2.1 ; sys_platform == 'darwin'",
+    "pywebview[gtk]==6.2.1 ; sys_platform == 'linux'",
 ]
 
 [dependency-groups]
