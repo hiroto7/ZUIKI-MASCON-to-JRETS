@@ -46,21 +46,40 @@ def accessibility_permission_status(granted: bool) -> tuple[str, str]:
     return ("アクセシビリティ権限: 未許可", COLOR_DANGER)
 
 
+def eb_lamp_colors(is_on: bool) -> tuple[str, str]:
+    if is_on:
+        return (COLOR_DANGER, COLOR_SURFACE)
+
+    return (COLOR_SURFACE, COLOR_MUTED)
+
+
+def should_show_eb_lamp(profile: TrainProfile, requested: bool) -> bool:
+    return requested and profile is TrainProfile.DEFAULT
+
+
 def should_show_accessibility_permission_status() -> bool:
     return is_macos()
 
 
 class StatusWindow:
-    def __init__(self, root: tk.Tk, controller: MasconController) -> None:
+    def __init__(
+        self,
+        root: tk.Tk,
+        controller: MasconController,
+        *,
+        show_eb_lamp: bool = False,
+    ) -> None:
         self.root = root
         self.controller = controller
+        self.show_eb_lamp = show_eb_lamp
         self.show_accessibility_permission_status = (
             should_show_accessibility_permission_status()
         )
         self.root.title("ZUIKI MASCON to JRETS")
-        self.root.geometry(
-            "640x360" if self.show_accessibility_permission_status else "640x320"
-        )
+        height = 320
+        if self.show_accessibility_permission_status:
+            height += 40
+        self.root.geometry(f"640x{height}")
         self.root.resizable(False, False)
         self.root.configure(bg=COLOR_BACKGROUND)
         self.root.protocol("WM_DELETE_WINDOW", self.close)
@@ -77,15 +96,40 @@ class StatusWindow:
         self.main_frame = tk.Frame(root, bg=COLOR_BACKGROUND)
         self.main_frame.pack(fill="x", padx=24)
 
+        self.drive_display_frame = tk.Frame(self.main_frame, bg=COLOR_BACKGROUND)
+        self.drive_display_frame.pack(side="left", padx=(0, 20))
+
         self.notch_label = tk.Label(
-            self.main_frame,
+            self.drive_display_frame,
             text=Notch.N.name,
             width=4,
             font=("Helvetica", 48, "bold"),
             bg=COLOR_BACKGROUND,
             fg=color_for_notch(Notch.N),
         )
-        self.notch_label.pack(side="left", padx=(0, 20))
+        self.notch_label.pack()
+
+        self.eb_lamp_frame: tk.Frame | None = None
+        self.eb_lamp_label: tk.Label | None = None
+        self.eb_lamp_visible = False
+        if self.show_eb_lamp:
+            self.eb_lamp_frame = tk.Frame(
+                self.drive_display_frame,
+                width=30,
+                height=30,
+                bg=COLOR_SURFACE,
+                highlightbackground=COLOR_MUTED,
+                highlightthickness=1,
+            )
+            self.eb_lamp_frame.pack_propagate(False)
+            self.eb_lamp_label = tk.Label(
+                self.eb_lamp_frame,
+                text="EB",
+                font=("Helvetica", 11, "bold"),
+                bg=COLOR_SURFACE,
+                fg=COLOR_MUTED,
+            )
+            self.eb_lamp_label.pack(fill="both", expand=True)
 
         self.info_frame = tk.Frame(self.main_frame, bg=COLOR_BACKGROUND)
         self.info_frame.pack(side="left", fill="x", expand=True)
@@ -204,6 +248,18 @@ class StatusWindow:
         return label
 
     def render_status(self) -> None:
+        eb_lamp_visible = should_show_eb_lamp(
+            self.controller.profile, self.show_eb_lamp
+        )
+        if eb_lamp_visible != self.eb_lamp_visible:
+            if eb_lamp_visible and self.eb_lamp_frame is not None:
+                self.eb_lamp_frame.pack(pady=(0, 2))
+            elif self.eb_lamp_frame is not None:
+                self.eb_lamp_frame.pack_forget()
+            self.eb_lamp_visible = eb_lamp_visible
+
+        if eb_lamp_visible:
+            self.controller.update_eb_lamp()
         self.notch_label.config(
             text=self.controller.notch.name,
             fg=color_for_notch(self.controller.notch),
@@ -216,6 +272,11 @@ class StatusWindow:
             )
         )
         self.raw_label.config(text=f"raw input: {self.controller.raw_notch.name}")
+        if eb_lamp_visible and self.eb_lamp_label is not None:
+            eb_lamp_bg, eb_lamp_fg = eb_lamp_colors(self.controller.eb_lamp_on)
+            if self.eb_lamp_frame is not None:
+                self.eb_lamp_frame.config(bg=eb_lamp_bg)
+            self.eb_lamp_label.config(bg=eb_lamp_bg, fg=eb_lamp_fg)
         if self.controller.joysticks:
             self.controller_label.config(
                 text=f"コントローラー認識数: {len(self.controller.joysticks)}",

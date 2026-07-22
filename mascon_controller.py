@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
 from enum import Enum, IntEnum, auto
+import time
 
 import pygame
 import pyautogui
@@ -7,6 +8,7 @@ from pyautogui import press
 
 INPUT_POLL_HZ = 60
 PYGAME_POLL_INTERVAL_MS = 1000 // INPUT_POLL_HZ
+EB_LAMP_TIMEOUT_SECONDS = 60.0
 
 
 class TrainProfile(Enum):
@@ -68,6 +70,12 @@ class ProfileLimit:
     max_brake: Notch
 
 
+@dataclass(frozen=True)
+class ButtonMapping:
+    keys: tuple[str, ...]
+    resets_eb_timer: bool = False
+
+
 PROFILE_LIMITS: dict[TrainProfile, ProfileLimit] = {
     TrainProfile.DEFAULT: ProfileLimit(max_power=Notch.P5, max_brake=Notch.B8),
     TrainProfile.TOBU: ProfileLimit(max_power=Notch.P3, max_brake=Notch.B7),
@@ -75,55 +83,47 @@ PROFILE_LIMITS: dict[TrainProfile, ProfileLimit] = {
 }
 
 
-MAPPING_TO_KEYBOARD: dict[ZuikiMasconButton | DpadButton, str | tuple[str, ...]] = {
+BUTTON_MAPPINGS: dict[ZuikiMasconButton | DpadButton, ButtonMapping] = {
     # 警笛（2段目）
-    ZuikiMasconButton.A: "backspace",
+    ZuikiMasconButton.A: ButtonMapping(("backspace",), resets_eb_timer=True),
     # 警笛（1段目）
-    ZuikiMasconButton.B: "enter",
+    ZuikiMasconButton.B: ButtonMapping(("enter",), resets_eb_timer=True),
     # EBリセットボタン
-    ZuikiMasconButton.X: "e",
+    ZuikiMasconButton.X: ButtonMapping(("e",), resets_eb_timer=True),
     # ATS確認ボタン
-    ZuikiMasconButton.Y: "space",
+    ZuikiMasconButton.Y: ButtonMapping(("space",)),
     # 警報持続ボタン
-    ZuikiMasconButton.L: "x",
+    ZuikiMasconButton.L: ButtonMapping(("x",)),
     # 抑速1
-    ZuikiMasconButton.R: "d",
+    ZuikiMasconButton.R: ButtonMapping(("d",)),
     # 定速/抑速2
-    ZuikiMasconButton.ZR: "w",
+    ZuikiMasconButton.ZR: ButtonMapping(("w",)),
     # 運転台表示切替
-    ZuikiMasconButton.MINUS: "c",
+    ZuikiMasconButton.MINUS: ButtonMapping(("c",)),
     # ポーズ
-    ZuikiMasconButton.PLUS: "esc",
+    ZuikiMasconButton.PLUS: ButtonMapping(("esc",)),
     # [GeForce NOW] ゲーム内オーバーレイを開く / 閉じる
-    ZuikiMasconButton.HOME: ("command", "g"),
+    ZuikiMasconButton.HOME: ButtonMapping(("command", "g")),
     # [GeForce NOW] スクリーンショットを保存する
-    ZuikiMasconButton.CAPTURE: ("command", "1"),
+    ZuikiMasconButton.CAPTURE: ButtonMapping(("command", "1")),
     # レバーサ 前位置方向
-    DpadButton.UP: "up",
+    DpadButton.UP: ButtonMapping(("up",)),
     # レバーサ 後位置方向
-    DpadButton.DOWN: "down",
+    DpadButton.DOWN: ButtonMapping(("down",)),
     # 連絡ブザースイッチ
-    DpadButton.LEFT: "b",
+    DpadButton.LEFT: ButtonMapping(("b",)),
     # 勾配起動ボタン
-    DpadButton.RIGHT: "g",
+    DpadButton.RIGHT: ButtonMapping(("g",)),
 }
 
 
-def map_to_keys(button: ZuikiMasconButton | DpadButton) -> tuple[str, ...]:
-    match MAPPING_TO_KEYBOARD[button]:
-        case tuple() as keys:
-            return keys
-        case key:
-            return (key,)
-
-
 def key_down(button: ZuikiMasconButton | DpadButton) -> None:
-    for key in map_to_keys(button):
+    for key in BUTTON_MAPPINGS[button].keys:
         pyautogui.keyDown(key)
 
 
 def key_up(button: ZuikiMasconButton | DpadButton) -> None:
-    for key in map_to_keys(button):
+    for key in BUTTON_MAPPINGS[button].keys:
         pyautogui.keyUp(key)
 
         # 矢印キーを押すとfnキーが押されたような状態になる問題への回避策
@@ -216,6 +216,8 @@ class MasconController:
     raw_notch: Notch = Notch.N
     pressed_buttons: set[ZuikiMasconButton | DpadButton] = field(default_factory=set)
     joysticks: dict[int, pygame.joystick.JoystickType] = field(default_factory=dict)
+    last_driver_operation_at: float = field(default_factory=time.monotonic)
+    eb_lamp_on: bool = False
 
     @property
     def profile_limit(self) -> ProfileLimit:
@@ -225,6 +227,16 @@ class MasconController:
     def notch(self) -> Notch:
         return project_notch(self.raw_notch, self.profile_limit)
 
+    def reset_eb_lamp_timer(self, now: float | None = None) -> None:
+        self.last_driver_operation_at = time.monotonic() if now is None else now
+        self.eb_lamp_on = False
+
+    def update_eb_lamp(self, now: float | None = None) -> None:
+        current_time = time.monotonic() if now is None else now
+        self.eb_lamp_on = (
+            current_time - self.last_driver_operation_at >= EB_LAMP_TIMEOUT_SECONDS
+        )
+
     def handle_axis_motion(self, value: float) -> None:
         current_notch = self.notch
         next_raw_notch = get_notch(value, ZuikiMasconButton.ZL in self.pressed_buttons)
@@ -233,6 +245,8 @@ class MasconController:
         update_notch(current_notch, next_notch, self.profile_limit.max_brake)
 
         self.raw_notch = next_raw_notch
+        if next_notch != current_notch:
+            self.reset_eb_lamp_timer()
 
     def handle_button_down(self, button: ZuikiMasconButton) -> None:
         self.pressed_buttons.add(button)
@@ -240,7 +254,10 @@ class MasconController:
             if self.raw_notch == Notch.B8:
                 update_notch(self.notch, Notch.EB, self.profile_limit.max_brake)
                 self.raw_notch = Notch.EB
+                self.reset_eb_lamp_timer()
         else:
+            if BUTTON_MAPPINGS[button].resets_eb_timer:
+                self.reset_eb_lamp_timer()
             key_down(button)
 
     def handle_button_up(self, button: ZuikiMasconButton) -> None:
@@ -293,4 +310,5 @@ class MasconController:
             self.notch.name,
             self.raw_notch.name,
             {button.name for button in self.pressed_buttons},
+            self.eb_lamp_on,
         )

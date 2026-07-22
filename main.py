@@ -34,6 +34,11 @@ def parse_args() -> argparse.Namespace:
         default="default",
         help="Train profile for notch limits. default preserves the previous behavior.",
     )
+    parser.add_argument(
+        "--experimental-eb-lamp",
+        action="store_true",
+        help="Show the experimental EB lamp status in the status window.",
+    )
     parser.add_argument("-v", "--verbose", action="store_true")
     return parser.parse_args()
 
@@ -100,7 +105,11 @@ def main() -> None:
     warn_if_accessibility_permission_is_missing()
 
     root = tk.Tk()
-    StatusWindow(root, controller)
+    StatusWindow(
+        root,
+        controller,
+        show_eb_lamp=args.experimental_eb_lamp,
+    )
 
     initialize_pygame(controller)
 
