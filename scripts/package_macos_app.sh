@@ -4,7 +4,13 @@ set -euo pipefail
 APP_NAME="ZUIKI-MASCON-to-JRETS"
 
 uv run python scripts/build_app_icon.py
-uv run pyinstaller --noconfirm --name "$APP_NAME" --noconsole --icon build/app-icon.icns main.py
+uv run pyinstaller \
+  --noconfirm \
+  --name "$APP_NAME" \
+  --noconsole \
+  --icon build/app-icon.icns \
+  --add-data "web:web" \
+  main.py
 
 cd dist
 codesign --verify --deep --strict "$APP_NAME.app"

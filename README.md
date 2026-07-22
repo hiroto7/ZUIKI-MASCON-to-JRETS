@@ -39,7 +39,7 @@ Windowsでは動作を確認していません。
 5. 運転を開始する
 6. 終了方法：ステータスウィンドウを閉じる
 
-![ZUIKI-MASCON-to-JRETSのステータスウィンドウ](docs/images/status-window.png)
+![ZUIKI-MASCON-to-JRETSのステータスウィンドウ](tests/vrt/__screenshots__/neutral.png)
 
 ### コマンドラインから実行する場合
 
@@ -54,6 +54,10 @@ Windowsでは動作を確認していません。
    cd ZUIKI-MASCON-to-JRETS
    uv sync --no-dev
    ```
+   - Ubuntuでは、画面表示に必要なGTKとWebKitGTKもインストールする
+     ```bash
+     sudo apt install gir1.2-gtk-3.0 gir1.2-webkit2-4.1 libcairo2-dev libgirepository-2.0-dev
+     ```
 3. main.py を実行する
    ```bash
    uv run python main.py --verbose

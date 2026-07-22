@@ -58,23 +58,34 @@ def test_main_starts_status_window(
     mocker: MockerFixture,
 ) -> None:
     args = Namespace(profile="default", verbose=False)
-    root = Mock()
     mocker.patch("main.parse_args", return_value=args)
-    mocker.patch("main.tk.Tk", return_value=root)
     prompt_mock = mocker.patch("main.prompt_for_accessibility_permission")
     warn_mock = mocker.patch("main.warn_if_accessibility_permission_is_missing")
     status_window_mock = mocker.patch("main.StatusWindow")
     initialize_mock = mocker.patch("main.initialize_pygame")
-    poll_mock = mocker.patch("main.poll_pygame_events")
 
     main.main()
 
     prompt_mock.assert_called_once_with()
     warn_mock.assert_called_once_with()
     status_window_mock.assert_called_once()
-    controller = status_window_mock.call_args.args[1]
+    controller = status_window_mock.call_args.args[0]
     assert isinstance(controller, MasconController)
     assert controller.profile == main.TrainProfile.DEFAULT
     initialize_mock.assert_called_once_with(controller)
-    poll_mock.assert_called_once_with(root, controller, args)
-    root.mainloop.assert_called_once_with()
+    status_window_mock.return_value.run.assert_called_once_with()
+
+
+def test_initialize_pygame_uses_dummy_video_driver(
+    mocker: MockerFixture,
+) -> None:
+    controller = MasconController()
+    mocker.patch("main.pygame.init")
+    mocker.patch("main.pygame.display.set_allow_screensaver")
+    initialize_joysticks_mock = mocker.patch.object(controller, "initialize_joysticks")
+    mocker.patch.dict(main.os.environ, {}, clear=True)
+
+    main.initialize_pygame(controller)
+
+    assert main.os.environ["SDL_VIDEODRIVER"] == "dummy"
+    initialize_joysticks_mock.assert_called_once_with()
