@@ -1,5 +1,5 @@
-import sys
 import subprocess
+import sys
 
 ACCESSIBILITY_SETTINGS_URL = (
     "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"

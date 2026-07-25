@@ -8,8 +8,8 @@ from pytest_mock import MockerFixture
 mock = Mock()
 sys.modules["pyautogui"] = mock
 
-import main  # noqa: E402
-from mascon_controller import MasconController  # noqa: E402
+import main
+from mascon_controller import MasconController
 
 
 def test_handle_pygame_events_uses_controller(

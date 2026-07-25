@@ -8,7 +8,7 @@ import accessibility_permission
 mock = Mock()
 sys.modules["pyautogui"] = mock
 
-from status_window import (  # noqa: E402
+from status_window import (
     accessibility_permission_status,
     should_show_accessibility_permission_status,
 )
