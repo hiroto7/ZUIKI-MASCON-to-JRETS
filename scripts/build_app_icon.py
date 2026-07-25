@@ -4,7 +4,6 @@ import subprocess
 import tempfile
 from pathlib import Path
 
-
 ICON_SIZES = (
     ("icon_16x16.png", 16),
     ("icon_16x16@2x.png", 32),

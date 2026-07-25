@@ -1,8 +1,8 @@
 from dataclasses import dataclass, field
 from enum import Enum, IntEnum, auto
 
-import pygame
 import pyautogui
+import pygame
 from pyautogui import press
 
 INPUT_POLL_HZ = 60
@@ -132,7 +132,7 @@ def key_up(button: ZuikiMasconButton | DpadButton) -> None:
             pyautogui.keyUp("fn")
 
 
-def get_notch(value: float, is_zl_button_pressed: bool) -> Notch:  # noqa: C901
+def get_notch(value: float, is_zl_button_pressed: bool) -> Notch:
     if value > 0.9:
         return Notch.P5
     elif value > 0.7:

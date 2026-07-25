@@ -7,11 +7,11 @@ from pytest_mock import MockerFixture
 mock = Mock()
 sys.modules["pyautogui"] = mock
 
-from mascon_controller import (  # noqa: E402
+from mascon_controller import (
+    PROFILE_LIMITS,
     DpadButton,
     MasconController,
     Notch,
-    PROFILE_LIMITS,
     TrainProfile,
     ZuikiMasconButton,
     get_notch,
