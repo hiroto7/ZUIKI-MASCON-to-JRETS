@@ -33,8 +33,11 @@ class ZuikiMasconButton(IntEnum):
     ZR = 7
     MINUS = 8
     PLUS = 9
+    EB_RESET = 10
+    ATS = 11
     HOME = 12
     CAPTURE = 13
+    SQUARE = 16
 
 
 class DpadButton(Enum):
@@ -82,8 +85,10 @@ MAPPING_TO_KEYBOARD: dict[ZuikiMasconButton | DpadButton, str | tuple[str, ...]]
     ZuikiMasconButton.B: "enter",
     # EBリセットボタン
     ZuikiMasconButton.X: "e",
+    ZuikiMasconButton.EB_RESET: "e",
     # ATS確認ボタン
     ZuikiMasconButton.Y: "space",
+    ZuikiMasconButton.ATS: "space",
     # 警報持続ボタン
     ZuikiMasconButton.L: "x",
     # 抑速1
@@ -98,6 +103,8 @@ MAPPING_TO_KEYBOARD: dict[ZuikiMasconButton | DpadButton, str | tuple[str, ...]]
     ZuikiMasconButton.HOME: ("command", "g"),
     # [GeForce NOW] スクリーンショットを保存する
     ZuikiMasconButton.CAPTURE: ("command", "1"),
+    # 用途不明のためキー操作なし
+    ZuikiMasconButton.SQUARE: (),
     # レバーサ 前位置方向
     DpadButton.UP: "up",
     # レバーサ 後位置方向

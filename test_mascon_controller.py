@@ -15,9 +15,24 @@ from mascon_controller import (
     TrainProfile,
     ZuikiMasconButton,
     get_notch,
+    map_to_keys,
     project_notch,
     update_notch,
 )
+
+
+@pytest.mark.parametrize(
+    ("button", "expected_keys"),
+    [
+        (ZuikiMasconButton.EB_RESET, ("e",)),
+        (ZuikiMasconButton.ATS, ("space",)),
+        (ZuikiMasconButton.SQUARE, ()),
+    ],
+)
+def test_map_to_keys_maps_pro_buttons(
+    button: ZuikiMasconButton, expected_keys: tuple[str, ...]
+) -> None:
+    assert map_to_keys(button) == expected_keys
 
 
 def test_get_notch() -> None:
