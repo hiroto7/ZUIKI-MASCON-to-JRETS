@@ -19,6 +19,8 @@ from mascon_controller import (
 )
 from status_window import StatusWindow
 
+POWER_BRAKE_AXIS = 1
+
 
 class TkRoot(Protocol):
     def after(self, ms: int, func: Callable[[], None]) -> object: ...
@@ -58,7 +60,7 @@ def handle_pygame_events(
                 controller.register_joystick(event.dict["device_index"])
             case pygame.JOYDEVICEREMOVED:
                 controller.unregister_joystick(event.dict["instance_id"])
-            case pygame.JOYAXISMOTION:
+            case pygame.JOYAXISMOTION if event.dict["axis"] == POWER_BRAKE_AXIS:
                 controller.handle_axis_motion(event.dict["value"])
             case pygame.JOYBUTTONDOWN:
                 controller.handle_button_down(ZuikiMasconButton(event.dict["button"]))
