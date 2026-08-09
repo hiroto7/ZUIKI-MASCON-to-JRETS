@@ -7,6 +7,7 @@ from pyautogui import press
 
 INPUT_POLL_HZ = 60
 PYGAME_POLL_INTERVAL_MS = 1000 // INPUT_POLL_HZ
+ZUIKI_MASCON_NAME = "ZUIKI MasCon for Nintendo Switch"
 
 
 class TrainProfile(Enum):
@@ -273,7 +274,12 @@ class MasconController:
 
     def register_joystick(self, device_index: int) -> None:
         joystick = pygame.joystick.Joystick(device_index)
+        if joystick.get_name() != ZUIKI_MASCON_NAME:
+            return
         self.joysticks[joystick.get_instance_id()] = joystick
+
+    def is_registered_joystick(self, instance_id: int) -> bool:
+        return instance_id in self.joysticks
 
     def initialize_joysticks(self) -> None:
         for device_index in range(pygame.joystick.get_count()):

@@ -58,13 +58,21 @@ def handle_pygame_events(
                 controller.register_joystick(event.dict["device_index"])
             case pygame.JOYDEVICEREMOVED:
                 controller.unregister_joystick(event.dict["instance_id"])
-            case pygame.JOYAXISMOTION:
+            case pygame.JOYAXISMOTION if controller.is_registered_joystick(
+                event.dict["instance_id"]
+            ):
                 controller.handle_axis_motion(event.dict["value"])
-            case pygame.JOYBUTTONDOWN:
+            case pygame.JOYBUTTONDOWN if controller.is_registered_joystick(
+                event.dict["instance_id"]
+            ):
                 controller.handle_button_down(ZuikiMasconButton(event.dict["button"]))
-            case pygame.JOYBUTTONUP:
+            case pygame.JOYBUTTONUP if controller.is_registered_joystick(
+                event.dict["instance_id"]
+            ):
                 controller.handle_button_up(ZuikiMasconButton(event.dict["button"]))
-            case pygame.JOYHATMOTION:
+            case pygame.JOYHATMOTION if controller.is_registered_joystick(
+                event.dict["instance_id"]
+            ):
                 controller.handle_hat_motion(*event.dict["value"])
             case pygame.QUIT:
                 controller.release_all_inputs()

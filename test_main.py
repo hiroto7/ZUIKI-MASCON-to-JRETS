@@ -17,14 +17,30 @@ def test_handle_pygame_events_uses_controller(
 ) -> None:
     event = Mock()
     event.type = main.pygame.JOYAXISMOTION
-    event.dict = {"value": 1.0}
+    event.dict = {"instance_id": 42, "value": 1.0}
     mocker.patch("main.pygame.event.get", return_value=[event])
     controller = MasconController()
+    controller.joysticks[42] = Mock()
     handle_axis_motion_mock = mocker.patch.object(controller, "handle_axis_motion")
 
     main.handle_pygame_events(controller, Namespace(verbose=False))
 
     handle_axis_motion_mock.assert_called_once_with(1.0)
+
+
+def test_handle_pygame_events_ignores_unregistered_controller(
+    mocker: MockerFixture,
+) -> None:
+    event = Mock()
+    event.type = main.pygame.JOYBUTTONDOWN
+    event.dict = {"instance_id": 99, "button": 11}
+    mocker.patch("main.pygame.event.get", return_value=[event])
+    controller = MasconController()
+    handle_button_down_mock = mocker.patch.object(controller, "handle_button_down")
+
+    main.handle_pygame_events(controller, Namespace(verbose=False))
+
+    handle_button_down_mock.assert_not_called()
 
 
 def test_warn_if_accessibility_permission_is_missing_outputs_warning(

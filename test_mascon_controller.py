@@ -221,6 +221,7 @@ def test_controller_register_joystick_keeps_joystick_instance(
     mocker: MockerFixture,
 ) -> None:
     joystick = Mock()
+    joystick.get_name.return_value = "ZUIKI MasCon for Nintendo Switch"
     joystick.get_instance_id.return_value = 42
     mocker.patch("mascon_controller.pygame.joystick.Joystick", return_value=joystick)
     controller = MasconController()
@@ -228,6 +229,19 @@ def test_controller_register_joystick_keeps_joystick_instance(
     controller.register_joystick(0)
 
     assert controller.joysticks == {42: joystick}
+
+
+def test_controller_register_joystick_ignores_other_controller(
+    mocker: MockerFixture,
+) -> None:
+    joystick = Mock()
+    joystick.get_name.return_value = "Xbox Series X Controller"
+    mocker.patch("mascon_controller.pygame.joystick.Joystick", return_value=joystick)
+    controller = MasconController()
+
+    controller.register_joystick(0)
+
+    assert controller.joysticks == {}
 
 
 def test_controller_initialize_joysticks_registers_connected_devices(
