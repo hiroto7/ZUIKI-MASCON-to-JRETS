@@ -17,13 +17,57 @@ def test_handle_pygame_events_uses_controller(
 ) -> None:
     event = Mock()
     event.type = main.pygame.JOYAXISMOTION
-    event.dict = {"value": 1.0}
+    event.dict = {"axis": 1, "value": 1.0}
     mocker.patch("main.pygame.event.get", return_value=[event])
     controller = MasconController()
     handle_axis_motion_mock = mocker.patch.object(controller, "handle_axis_motion")
 
     main.handle_pygame_events(controller, Namespace(verbose=False))
 
+    handle_axis_motion_mock.assert_called_once_with(1.0)
+
+
+@pytest.mark.parametrize("axis", [0, 2, 3])
+def test_handle_pygame_events_ignores_non_power_brake_axis(
+    mocker: MockerFixture, axis: int
+) -> None:
+    event = Mock()
+    event.type = main.pygame.JOYAXISMOTION
+    event.dict = {"axis": axis, "value": 1.0}
+    mocker.patch("main.pygame.event.get", return_value=[event])
+    controller = MasconController()
+    handle_axis_motion_mock = mocker.patch.object(controller, "handle_axis_motion")
+
+    main.handle_pygame_events(controller, Namespace(verbose=False))
+
+    handle_axis_motion_mock.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    "event_type", [main.pygame.JOYBUTTONDOWN, main.pygame.JOYBUTTONUP]
+)
+@pytest.mark.parametrize("button", [10, 11, 16])
+def test_handle_pygame_events_ignores_unknown_button_and_continues(
+    mocker: MockerFixture, event_type: int, button: int
+) -> None:
+    unknown_button_event = Mock()
+    unknown_button_event.type = event_type
+    unknown_button_event.dict = {"button": button}
+    axis_event = Mock()
+    axis_event.type = main.pygame.JOYAXISMOTION
+    axis_event.dict = {"axis": 1, "value": 1.0}
+    mocker.patch(
+        "main.pygame.event.get", return_value=[unknown_button_event, axis_event]
+    )
+    controller = MasconController()
+    handle_button_down_mock = mocker.patch.object(controller, "handle_button_down")
+    handle_button_up_mock = mocker.patch.object(controller, "handle_button_up")
+    handle_axis_motion_mock = mocker.patch.object(controller, "handle_axis_motion")
+
+    main.handle_pygame_events(controller, Namespace(verbose=False))
+
+    handle_button_down_mock.assert_not_called()
+    handle_button_up_mock.assert_not_called()
     handle_axis_motion_mock.assert_called_once_with(1.0)
 
 

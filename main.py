@@ -19,6 +19,8 @@ from mascon_controller import (
 )
 from status_window import StatusWindow
 
+POWER_BRAKE_AXIS = 1
+
 
 class TkRoot(Protocol):
     def after(self, ms: int, func: Callable[[], None]) -> object: ...
@@ -49,6 +51,13 @@ def warn_if_accessibility_permission_is_missing() -> None:
         )
 
 
+def get_zuiki_mascon_button(button: int) -> ZuikiMasconButton | None:
+    try:
+        return ZuikiMasconButton(button)
+    except ValueError:
+        return None
+
+
 def handle_pygame_events(
     controller: MasconController, args: argparse.Namespace
 ) -> None:
@@ -58,12 +67,16 @@ def handle_pygame_events(
                 controller.register_joystick(event.dict["device_index"])
             case pygame.JOYDEVICEREMOVED:
                 controller.unregister_joystick(event.dict["instance_id"])
-            case pygame.JOYAXISMOTION:
+            case pygame.JOYAXISMOTION if event.dict["axis"] == POWER_BRAKE_AXIS:
                 controller.handle_axis_motion(event.dict["value"])
             case pygame.JOYBUTTONDOWN:
-                controller.handle_button_down(ZuikiMasconButton(event.dict["button"]))
+                button = get_zuiki_mascon_button(event.dict["button"])
+                if button is not None:
+                    controller.handle_button_down(button)
             case pygame.JOYBUTTONUP:
-                controller.handle_button_up(ZuikiMasconButton(event.dict["button"]))
+                button = get_zuiki_mascon_button(event.dict["button"])
+                if button is not None:
+                    controller.handle_button_up(button)
             case pygame.JOYHATMOTION:
                 controller.handle_hat_motion(*event.dict["value"])
             case pygame.QUIT:
