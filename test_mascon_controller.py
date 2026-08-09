@@ -1,4 +1,5 @@
 import sys
+from itertools import pairwise
 from unittest.mock import Mock, call
 
 import pytest
@@ -7,6 +8,7 @@ from pytest_mock import MockerFixture
 mock = Mock()
 sys.modules["pyautogui"] = mock
 
+import mascon_controller
 from mascon_controller import (
     PROFILE_LIMITS,
     DpadButton,
@@ -33,6 +35,10 @@ def test_map_to_keys_maps_pro_buttons(
     button: ZuikiMasconButton, expected_keys: tuple[str, ...]
 ) -> None:
     assert map_to_keys(button) == expected_keys
+
+
+def test_pyautogui_pause_is_disabled() -> None:
+    assert mascon_controller.pyautogui.PAUSE == 0
 
 
 def test_get_notch() -> None:
@@ -91,6 +97,31 @@ def test_update_notch_does_nothing_when_notch_is_unchanged(
     press_mock = mocker.patch("mascon_controller.press")
     update_notch(notch, notch, Notch.B8)
     press_mock.assert_not_called()
+
+
+def test_update_notch_preserves_rapid_input_sequence(
+    mocker: MockerFixture,
+) -> None:
+    press_mock = mocker.patch("mascon_controller.press")
+    notches = (
+        Notch.EB,
+        Notch.B8,
+        Notch.B4,
+        Notch.B1,
+        Notch.N,
+        Notch.P4,
+    )
+
+    for current, next_notch in pairwise(notches):
+        update_notch(current, next_notch, Notch.B8)
+
+    assert press_mock.call_args_list == [
+        call(",", 1),
+        call(",", 4),
+        call(",", 3),
+        call("m"),
+        call("z", 4),
+    ]
 
 
 @pytest.mark.parametrize(
