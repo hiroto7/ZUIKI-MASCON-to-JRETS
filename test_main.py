@@ -44,33 +44,6 @@ def test_handle_pygame_events_ignores_non_power_brake_axis(
 
 
 @pytest.mark.parametrize(
-    "event_type", [main.pygame.JOYBUTTONDOWN, main.pygame.JOYBUTTONUP]
-)
-def test_handle_pygame_events_ignores_unknown_button_and_continues(
-    mocker: MockerFixture, event_type: int
-) -> None:
-    unknown_button_event = Mock()
-    unknown_button_event.type = event_type
-    unknown_button_event.dict = {"button": 99}
-    axis_event = Mock()
-    axis_event.type = main.pygame.JOYAXISMOTION
-    axis_event.dict = {"axis": 1, "value": 1.0}
-    mocker.patch(
-        "main.pygame.event.get", return_value=[unknown_button_event, axis_event]
-    )
-    controller = MasconController()
-    handle_button_down_mock = mocker.patch.object(controller, "handle_button_down")
-    handle_button_up_mock = mocker.patch.object(controller, "handle_button_up")
-    handle_axis_motion_mock = mocker.patch.object(controller, "handle_axis_motion")
-
-    main.handle_pygame_events(controller, Namespace(verbose=False))
-
-    handle_button_down_mock.assert_not_called()
-    handle_button_up_mock.assert_not_called()
-    handle_axis_motion_mock.assert_called_once_with(1.0)
-
-
-@pytest.mark.parametrize(
     ("button_number", "expected_button"),
     [
         (10, main.ZuikiMasconButton.EB_RESET),

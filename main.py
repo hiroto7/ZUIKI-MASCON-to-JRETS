@@ -51,13 +51,6 @@ def warn_if_accessibility_permission_is_missing() -> None:
         )
 
 
-def get_zuiki_mascon_button(button: int) -> ZuikiMasconButton | None:
-    try:
-        return ZuikiMasconButton(button)
-    except ValueError:
-        return None
-
-
 def handle_pygame_events(
     controller: MasconController, args: argparse.Namespace
 ) -> None:
@@ -70,13 +63,9 @@ def handle_pygame_events(
             case pygame.JOYAXISMOTION if event.dict["axis"] == POWER_BRAKE_AXIS:
                 controller.handle_axis_motion(event.dict["value"])
             case pygame.JOYBUTTONDOWN:
-                button = get_zuiki_mascon_button(event.dict["button"])
-                if button is not None:
-                    controller.handle_button_down(button)
+                controller.handle_button_down(ZuikiMasconButton(event.dict["button"]))
             case pygame.JOYBUTTONUP:
-                button = get_zuiki_mascon_button(event.dict["button"])
-                if button is not None:
-                    controller.handle_button_up(button)
+                controller.handle_button_up(ZuikiMasconButton(event.dict["button"]))
             case pygame.JOYHATMOTION:
                 controller.handle_hat_motion(*event.dict["value"])
             case pygame.QUIT:
