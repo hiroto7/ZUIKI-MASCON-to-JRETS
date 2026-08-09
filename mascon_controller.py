@@ -5,6 +5,9 @@ import pyautogui
 import pygame
 from pyautogui import press
 
+# 各キー入力後の既定100ms待機でイベント処理が滞留するのを防ぐ
+pyautogui.PAUSE = 0
+
 INPUT_POLL_HZ = 60
 PYGAME_POLL_INTERVAL_MS = 1000 // INPUT_POLL_HZ
 
