@@ -103,7 +103,7 @@ MAPPING_TO_KEYBOARD: dict[ZuikiMasconButton | DpadButton, str | tuple[str, ...]]
     ZuikiMasconButton.HOME: ("command", "g"),
     # [GeForce NOW] スクリーンショットを保存する
     ZuikiMasconButton.CAPTURE: ("command", "1"),
-    # 用途不明のためキー操作なし
+    # キー割り当てなし
     ZuikiMasconButton.SQUARE: (),
     # レバーサ 前位置方向
     DpadButton.UP: "up",
