@@ -5,16 +5,16 @@ requires-python = ">=3.13,<3.14"
 dependencies = [
     "pyautogui==0.9.54",
     "pygame==2.6.1",
-    "pyobjc-framework-applicationservices==12.2.1 ; sys_platform == 'darwin'",
+    "pyobjc-framework-applicationservices==12.2.2 ; sys_platform == 'darwin'",
 ]
 
 [dependency-groups]
 dev = [
     "basedpyright>=1.39.9",
-    "pyinstaller==6.21.0",
+    "pyinstaller==6.22.0",
     "pytest==9.1.1",
     "pytest-mock==3.15.1",
-    "ruff>=0.16.1",
+    "ruff>=0.16.2",
 ]
 
 [tool.uv]
