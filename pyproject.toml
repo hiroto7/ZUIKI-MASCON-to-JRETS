@@ -4,7 +4,7 @@ version = "0.0.0"
 requires-python = ">=3.13,<3.14"
 dependencies = [
     "pyautogui==0.9.54",
-    "pygame==2.6.1",
+    "pygame-ce==2.5.8",
     "pyobjc-framework-applicationservices==12.2.2 ; sys_platform == 'darwin'",
 ]
 

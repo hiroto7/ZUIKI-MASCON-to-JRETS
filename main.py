@@ -1,4 +1,5 @@
 import argparse
+import os
 import sys
 import tkinter as tk
 from collections.abc import Callable
@@ -89,6 +90,9 @@ def poll_pygame_events(
 
 
 def initialize_pygame(controller: MasconController) -> None:
+    if is_macos():
+        # macOS 27でZUIKIマスコンが認識されない問題への回避策
+        os.environ["SDL_JOYSTICK_MFI"] = "0"
     pygame.init()
     pygame.display.set_allow_screensaver(True)
     controller.initialize_joysticks()
