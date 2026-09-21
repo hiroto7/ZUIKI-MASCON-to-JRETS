@@ -14,13 +14,13 @@ GeForce NOW版のJRETSをmacOSおよびLinuxから操作できるように開発
 
 - macOS
   - Mac mini (2024)
-  - macOS Tahoe 26.4.1
+  - macOS Golden Gate 27.0
 - Linux
   - Ubuntu 26.04 LTS (on VMware Fusion)
 - uv
 - ズイキマスコン ZKNS-013
-- JR東日本トレインシミュレータ Ver. 1.0.1.689
-- GeForce NOW 2.0.77.157
+- JR東日本トレインシミュレータ Ver. 1.0.1.838
+- GeForce NOW 2.0.88.129
 
 Windowsでは動作を確認していません。
 
