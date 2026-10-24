@@ -13,8 +13,8 @@ dev = [
     "basedpyright>=1.40.2",
     "pyinstaller==6.22.3",
     "pytest==9.1.1",
-    "pytest-mock==3.16.0",
-    "ruff>=0.17.0",
+    "pytest-mock==3.17.0",
+    "ruff>=0.17.1",
 ]
 
 [tool.uv]
